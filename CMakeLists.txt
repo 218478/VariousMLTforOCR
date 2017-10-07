@@ -9,4 +9,6 @@ find_package(PythonLibs REQUIRED)
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(DATASETS_DIR ${CMAKE_SOURCE_DIR}/datasets)
 
-add_custom_target(Reader python2.7 ${SOURCE_DIR}/read.py ${DATASETS_DIR}/MNIST)
+add_custom_target(Reader python2.7 ${SOURCE_DIR}/read.py
+                  ${DATASETS_DIR}/MNIST
+                  ${CMAKE_BINARY_DIR})

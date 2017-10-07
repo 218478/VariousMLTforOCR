@@ -1,9 +1,7 @@
 # WCZYTYWANIE NIE JEST MOJE WIEC ZROB SWOJE ALBO TEN KOD PO PROSTU PRZEROB
 
 
-import os
-import argparse
-import struct
+import os, argparse, logging, time, struct
 import numpy as np
 
 """
@@ -81,7 +79,7 @@ def getHorizontalAndVerticalHistogram(image):
 
 def binarize(image):
     """
-    Binarizes the MNIST image.
+    Binarizes the MNIST image. Usage: binarize(image)
     """
     for i in xrange(0, len(image[1])):
         for j in xrange(0, len(image[1][i])):
@@ -95,16 +93,82 @@ def displayNImages(n, pathToDatasets):
     """
     images = readMNIST(path=pathToDatasets)
     i = 0
+    kNNforMNIST(images, n = 1)
     for image in images:
         # show(image[1])
-        printInfoToConsole(image)
-        binarize(image)
-        getHorizontalAndVerticalHistogram(image)
+        # printInfoToConsole(image)
+        # binarize(image)
+        # getHorizontalAndVerticalHistogram(image)
         i += 1
-        if i > n-1:
-            break
+        # if i > n-1:
+        #     break
 
-def createPatternSetForKNN(n=10):
+    print i
+
+def countSimilarity(image, patternSet):
+    """
+    Returns sorted array of closest characters.
+    """
+    patternArray = []
+    for charNo, characterSet in enumerate(patternSet):
+        for patternImage in characterSet:
+            temp = patternImage.reshape(28, 28) * image
+            patternArray.append([charNo, sum(sum(temp))])
+
+    # sorted(patternArray, key = lambda patternElem: patternElem[1] )
+    patternArray.sort(key= lambda patternElem: patternElem[1], reverse=True )
+    return patternArray
+
+def chooseNeighbor(simArray, n = 7):
+    a = [0]*10 # change to np.zeros()
+    for i in xrange(0, n):
+        a[simArray[i][0]] += 1
+    return a.index(max(a))
+
+def kNNforMNIST(images, n):
+    mySet = createPatternSetForKNN(images, 10, n = 10)
+    successNo = 0
+    failuresNo = 0
+
+    start = time.clock()
+    for img in images:
+        img = (next(images))
+        binarize(img)
+        sim = countSimilarity(img[1], mySet)
+        neighbor = chooseNeighbor(sim, n)
+        if neighbor == img[0]:
+            successNo += 1
+        else:
+            failuresNo += 1
+
+        # if (failuresNo + successNo) > 1000:
+        #     break
+
+    stop = time.clock()
+    print "skutecznosc: " + str(float(successNo)/(successNo+failuresNo))
+    print "czas calkowity: " + str(stop-start)
+    print "czas na probke: " + str(float(stop-start)/(successNo+failuresNo))
+    exit()
+
+# TODO: change the name of n variable
+def createPatternSetForKNN(images, classesNo, n=10):
+    """
+    Creates pattern for kNN image recognition. Parameter n tells
+    how many role models should the algorithm base for each class.
+    """
+
+    howManyLeft = [n]*classesNo
+    imageDimension = len(next(images)[1])*len(next(images)[1][0])
+    patternSet = np.ones((classesNo, n, imageDimension), dtype=int) # creates a set of classesNo tuples
+    while sum(howManyLeft) > 0:
+        image = next(images)
+        binarize(image)
+        logging.info("image binarized")
+        if howManyLeft[image[0]] > 0:
+            patternSet[image[0]][n-howManyLeft[image[0]]] = np.ravel(image[1])
+            howManyLeft[image[0]] -= 1
+
+    return patternSet
     
 
 
@@ -115,7 +179,11 @@ if __name__ == '__main__':
     # app.addLabel("title", "Welcome to appJar")
     # app.setLabelBg("title", "red")
     # app.go()
+
     parser = argparse.ArgumentParser()
     parser.add_argument("pathToDatasets", help="Directory to stored datasets")
+    parser.add_argument("pathToLogFile", help="Path to log file")
     args = parser.parse_args()
+    logging.basicConfig(format='%(asctime)s \t %(levelname)s:%(message)s', filename=os.path.join(args.pathToLogFile, 'logFile.log'))#, level = logging.INFO)
+
     displayNImages(1, args.pathToDatasets)
