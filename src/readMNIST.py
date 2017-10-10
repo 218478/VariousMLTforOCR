@@ -1,7 +1,7 @@
 # WCZYTYWANIE NIE JEST MOJE WIEC ZROB SWOJE ALBO TEN KOD PO PROSTU PRZEROB
 
 
-import os, argparse, logging, time, struct
+import os, logging, time, struct, argparse
 import numpy as np
 
 """
@@ -93,7 +93,7 @@ def displayNImages(n, pathToDatasets):
     """
     images = readMNIST(path=pathToDatasets)
     i = 0
-    kNNforMNIST(images, n = 1)
+    kNNforMNIST(images, n = 1) # achieved 67.7 % 
     for image in images:
         # show(image[1])
         # printInfoToConsole(image)
@@ -105,15 +105,23 @@ def displayNImages(n, pathToDatasets):
 
     print i
 
-def countSimilarity(image, patternSet):
+def countSimilarity(image, patternSet, binarized = True):
     """
     Returns sorted array of closest characters.
     """
     patternArray = []
-    for charNo, characterSet in enumerate(patternSet):
-        for patternImage in characterSet:
-            temp = patternImage.reshape(28, 28) * image
-            patternArray.append([charNo, sum(sum(temp))])
+
+    if binarized:
+        for charNo, characterSet in enumerate(patternSet):
+            for patternImage in characterSet:
+                temp = patternImage.reshape(28, 28) * image
+                patternArray.append([charNo, sum(sum(temp))])
+    else:
+        for charNo, characterSet in enumerate(patternSet):
+            for patternImage in characterSet:
+                temp = np.linalg.norm(patternImage.reshape(28, 28) - image)
+                patternArray.append([charNo, temp])
+
 
     # sorted(patternArray, key = lambda patternElem: patternElem[1] )
     patternArray.sort(key= lambda patternElem: patternElem[1], reverse=True )
@@ -133,16 +141,16 @@ def kNNforMNIST(images, n):
     start = time.clock()
     for img in images:
         img = (next(images))
-        binarize(img)
-        sim = countSimilarity(img[1], mySet)
+        # binarize(img)
+        sim = countSimilarity(img[1], mySet, binarized = True)
         neighbor = chooseNeighbor(sim, n)
         if neighbor == img[0]:
             successNo += 1
         else:
             failuresNo += 1
 
-        # if (failuresNo + successNo) > 1000:
-        #     break
+        if (failuresNo + successNo) > 1000:
+            break
 
     stop = time.clock()
     print "skutecznosc: " + str(float(successNo)/(successNo+failuresNo))
@@ -170,8 +178,6 @@ def createPatternSetForKNN(images, classesNo, n=10):
 
     return patternSet
     
-
-
 if __name__ == '__main__':
     # from appJar import gui
     # # create a GUI variable called app
