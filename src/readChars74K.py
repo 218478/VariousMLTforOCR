@@ -1,4 +1,6 @@
 from __future__ import print_function
+
+from tempfile import TemporaryFile
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential
@@ -7,18 +9,17 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 
 import numpy as np
-import argparse, logging, os, sys
+import argparse, logging, os, sys, math
 import shutil
 import PIL
-from PIL import Image
+from PIL import Image, ImageOps
 
 
 # CONSTANTS
 batch_size = 128
-num_classes = 10
-epochs = 1
+epochs = 12
 
-maxsize = (16, 16)
+maxsize = (8, 8)
 classNo = 62
 toolbar_width = 37
 
@@ -47,43 +48,75 @@ def getFilepathsToFilesInChars74(training = True):
             file = os.path.join(root, file)
             filepathsForSpecificClass.append(file)
         if len(filepathsForSpecificClass) is not 0:
-            classNo = int(path[-1][-3:]) - 1 # because the number is starting from 1
-            filepaths[classNo] = filepathsForSpecificClass
+            currentScannedClass = int(path[-1][-3:]) - 1 # because the number is starting from 1
+            filepaths[currentScannedClass] = filepathsForSpecificClass
     return filepaths
+
+def getWhiteImageBlackBackground(image):
+    """
+    This function asserts if image has a black (0) or white (255) background.
+    And then either inverts the colors, or leaves the black background.
+    """
+    if np.bincount(np.array(image).flatten()).argmax() == 255:
+        return ImageOps.invert(image)
+    else:
+        return image
 
 def getTupleOfImages(trainSetProportion):
     """
     Returns a tuple of images. trainSetProportion must be between (0; 1.0). It describes
     what part of the images are used for training and what part for testing.
 
+    Color inversion happens on the fly.
+
     It has the fancy progress bar which is 37 characters wide.
     !!! This function also makes sure the images are converted to maxsize (usually 16x16) but
     this can be changed by setting the maxsize variable !!!
     """
     filepaths = getFilepathsToFilesInChars74()
-    print ("Filenames array size: " + str((sys.getsizeof(filepaths[0]) + sys.getsizeof(filepaths[1]))*62/1024) + " kB")
+    counts = np.zeros([len(filepaths[0]),1])
+    
+    for idx, val in enumerate(filepaths): # counting images in every class
+        counts[idx] = len(val) # TODO: use this value in the for loop below and use list comprehension
+    print ("Filenames array size: " + str((sys.getsizeof(filepaths[0]) + sys.getsizeof(filepaths[1]))*classNo/1024) + " kB")
+    print ("Read: " + str(len(filepaths[1]*len(filepaths))))
     print ("Reading images into memory")
-    sys.stdout.write("[%s]" % (" " * toolbar_width))
-    sys.stdout.flush()
-    sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
-    images = list()
-    labels = list()
+    # sys.stdout.write("[%s]" % (" " * toolbar_width))
+    # sys.stdout.flush()
+    # sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
+
     global classNo # because it was referenced before assignment
-    for classNo in xrange(0,3):#classNo-1): # TODO: change 
-        for filepath in filepaths[classNo]:
+    # trainCount = int(math.floor(int(sum(counts))*trainSetProportion))
+    # testCount = int(sum(counts)) - trainCount
+    # TODO: please change it
+    trainCountPerClass = 900
+    testCountPerClass = 116
+
+    trainSet = np.empty((classNo*trainCountPerClass,maxsize[0],maxsize[1])) # TODO: remove hard coding
+    trainLabels = np.empty((trainCountPerClass*classNo))
+    testSet = np.empty((classNo*testCountPerClass,maxsize[0],maxsize[1])) # TODO: remove hard coding
+    testLabels = np.empty((testCountPerClass*classNo))
+    print("I have %d classes" % classNo)
+    for imgClass in range(0, classNo-1): # TODO: change 
+        idx = 0
+        for filepath in filepaths[imgClass]:
             image = Image.open(filepath, mode="r")
             image.thumbnail(maxsize, Image.ANTIALIAS)
-            labels.append(classNo)
-            images.append(np.array(image))
-        sys.stdout.write("-")
-        sys.stdout.flush()
-    
-    sys.stdout.write("\n")
-    # length is ok when dividing this way
-    print ("Length of read dataset: " + str(len(images)))
-    # print len(images[0:int(len(images)*trainSetProportion)])+len(images[int(len(images)*trainSetProportion):])
-    return labels[0:int(len(labels)*trainSetProportion)], images[0:int(len(images)*trainSetProportion)], \
-           labels[int(len(labels)*trainSetProportion):], images[int(len(images)*trainSetProportion):]
+            image = getWhiteImageBlackBackground(image) # negates
+            if idx < trainCountPerClass:
+                trainSet[imgClass*trainCountPerClass+idx] = np.array(image)
+                trainLabels[imgClass*trainCountPerClass+idx] = imgClass
+            else:
+                testSet[imgClass*testCountPerClass + idx-trainCountPerClass] = np.array(image)
+                testLabels[imgClass*testCountPerClass + idx-trainCountPerClass] = imgClass
+            idx += 1
+    #     sys.stdout.write("-")
+    #     sys.stdout.flush()
+
+    # sys.stdout.write("\n")
+    print ("Length of read trainDataset: " + str(trainSet.shape))
+    print ("Length of read testDataset: " + str(testSet.shape))
+    return trainLabels, trainSet, testLabels, testSet
 
 # hard-coded label creation TODO: I think this can be deleted
 def createLabels():
@@ -91,22 +124,28 @@ def createLabels():
     This function describes, and assigns the class to the number.
     Specific to Chars74K dataset.
     """
-    myLabels = []
-    for i in range(0,10):
-        myLabels.append(str(i))
-    for i in range(65,91):
-        myLabels.append("capital_" + chr(i))
-    for i in range(97,123):
-        myLabels.append("small_" + chr(i))
+    myLabels = [str(i) for i in range(0,10)]
+    myLabels.append(["capital_" + chr(i) for i in range(65,91)])
+    myLabels.append(["small_" + chr(i) for i in range(97,123)])
     return myLabels
 
 
-# TODO: how about making the letter white and background black????
 def main():
-    trainLabels, trainSet, testLabel, testSet = getTupleOfImages(0.8)
-    print ("Shape: " + trainSet.shape)
+    # trainLabels, trainSet, testLabels, testSet = getTupleOfImages(0.8)
+    # for_saving = np.array((trainLabels, trainSet, testLabels, testSet))
+    # outfile = "temp_to_save_np_array.temp"
+    # outfile = file(outfile, 'w')
+    # np.save(outfile, for_saving)
+    # outfile.close()
+    # exit()
+    outfile = "temp_to_save_np_array.temp"
+    outfile = file(outfile, 'r')
+    trainLabels, trainSet, testLabels, testSet = np.load(outfile)
+    print ("Loaded")
     print ("Length of training set: " + str(len(trainSet)))
     print ("Length of test set: " + str(len(testSet)))
+    img_rows = maxsize[0]
+    img_cols = maxsize[1]
     if K.image_data_format() == 'channels_first':
         trainSet = trainSet.reshape(trainSet.shape[0], 1, img_rows, img_cols)
         testSet = testSet.reshape(testSet.shape[0], 1, img_rows, img_cols)
@@ -122,11 +161,11 @@ def main():
     testSet /= 255
     print('trainSet shape:', trainSet.shape)
     print(trainSet.shape[0], 'train samples')
+    print('testSet shape:', testSet.shape)
     print(testSet.shape[0], 'test samples')
 
-    # convert class vectors to binary class matrices
-    y_train = keras.utils.to_categorical(y_train, num_classes)
-    y_test = keras.utils.to_categorical(y_test, num_classes)
+    trainLabels = keras.utils.to_categorical(trainLabels, classNo)
+    testLabels = keras.utils.to_categorical(testLabels, classNo)
 
     model = Sequential()
     model.add(Conv2D(32, kernel_size=(3, 3),
@@ -138,18 +177,18 @@ def main():
     model.add(Flatten())
     model.add(Dense(128, activation='relu'))
     model.add(Dropout(0.5))
-    model.add(Dense(num_classes, activation='softmax'))
+    model.add(Dense(classNo, activation='softmax'))
 
     model.compile(loss=keras.losses.categorical_crossentropy,
                 optimizer=keras.optimizers.Adadelta(),
                 metrics=['accuracy'])
 
-    model.fit(trainSet, y_train,
+    model.fit(trainSet, trainLabels,
             batch_size=batch_size,
             epochs=epochs,
             verbose=1,
-            validation_data=(testSet, y_test))
-    score = model.evaluate(testSet, y_test, verbose=0)
+            validation_data=(testSet, testLabels))
+    score = model.evaluate(testSet, testLabels, verbose=0)
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
 
