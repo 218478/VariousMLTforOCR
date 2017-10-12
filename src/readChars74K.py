@@ -9,19 +9,17 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 
 import numpy as np
-import argparse, logging, os, sys, math
-import shutil
-import PIL
+import argparse, logging, os, sys, math, json, shutil
 from PIL import Image, ImageOps
 
 
 # CONSTANTS
 batch_size = 128
-epochs = 12
+epochs = 18
 
-maxsize = (8, 8)
+maxsize = (16, 16)
 classNo = 62
-toolbar_width = 37
+toolbar_width = classNo
 
 
 MYPATH = '/home/kkuczaj/Praca_inzynierska/VariousMLTforOCR/datasets/Chars74K/English/Fnt'
@@ -81,11 +79,12 @@ def getTupleOfImages(trainSetProportion):
     print ("Filenames array size: " + str((sys.getsizeof(filepaths[0]) + sys.getsizeof(filepaths[1]))*classNo/1024) + " kB")
     print ("Read: " + str(len(filepaths[1]*len(filepaths))))
     print ("Reading images into memory")
-    # sys.stdout.write("[%s]" % (" " * toolbar_width))
-    # sys.stdout.flush()
-    # sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
-
     global classNo # because it was referenced before assignment
+    print("I have %d classes" % classNo)
+
+    sys.stdout.write("[%s]" % (" " * toolbar_width))
+    sys.stdout.flush()
+    sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
     # trainCount = int(math.floor(int(sum(counts))*trainSetProportion))
     # testCount = int(sum(counts)) - trainCount
     # TODO: please change it
@@ -96,7 +95,6 @@ def getTupleOfImages(trainSetProportion):
     trainLabels = np.empty((trainCountPerClass*classNo))
     testSet = np.empty((classNo*testCountPerClass,maxsize[0],maxsize[1])) # TODO: remove hard coding
     testLabels = np.empty((testCountPerClass*classNo))
-    print("I have %d classes" % classNo)
     for imgClass in range(0, classNo-1): # TODO: change 
         idx = 0
         for filepath in filepaths[imgClass]:
@@ -110,10 +108,10 @@ def getTupleOfImages(trainSetProportion):
                 testSet[imgClass*testCountPerClass + idx-trainCountPerClass] = np.array(image)
                 testLabels[imgClass*testCountPerClass + idx-trainCountPerClass] = imgClass
             idx += 1
-    #     sys.stdout.write("-")
-    #     sys.stdout.flush()
+        sys.stdout.write("-")
+        sys.stdout.flush()
 
-    # sys.stdout.write("\n")
+    sys.stdout.write("\n")
     print ("Length of read trainDataset: " + str(trainSet.shape))
     print ("Length of read testDataset: " + str(testSet.shape))
     return trainLabels, trainSet, testLabels, testSet
@@ -189,6 +187,10 @@ def main():
             verbose=1,
             validation_data=(testSet, testLabels))
     score = model.evaluate(testSet, testLabels, verbose=0)
+    model.save("trained_model.h5")
+    json_string = model.to_json()
+    with open("data.txt",'w') as jfile:
+        json.dump(json_string, jfile)        
     print('Test loss:', score[0])
     print('Test accuracy:', score[1])
 
