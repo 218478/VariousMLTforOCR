@@ -16,3 +16,7 @@ add_custom_target(MNIST_OCR python2.7 ${SOURCE_DIR}/readMNIST.py
 add_custom_target(CHARS74K_OCR python2.7 ${SOURCE_DIR}/readChars74K.py
                   ${DATASETS_DIR}/Chars74K
                   ${CMAKE_BINARY_DIR})
+
+add_custom_target(APP python2.7 ${SOURCE_DIR}/qtApp.py
+                  ${DATASETS_DIR}/models.png
+                  ${CMAKE_BINARY_DIR})
