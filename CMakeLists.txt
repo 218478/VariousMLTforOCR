@@ -17,7 +17,7 @@ add_custom_target(MNIST_OCR python2.7 ${SOURCE_DIR}/readMNIST.py
                   ${CMAKE_BINARY_DIR})
 
 add_custom_target(CHARS74K_OCR python2.7 ${SOURCE_DIR}/readChars74K.py
-                  ${DATASETS_DIR}/Chars74K
+                  ${DATASETS_DIR}/Chars74K/English/Fnt
                   ${CMAKE_BINARY_DIR})
 
 add_custom_target(VISION python2.7 ${SOURCE_DIR}/opencv.py
@@ -25,4 +25,8 @@ add_custom_target(VISION python2.7 ${SOURCE_DIR}/opencv.py
                   ${CMAKE_BINARY_DIR})
 
 add_custom_target(APP python2.7 ${GUI_DIR}/main.py
+                  ${CMAKE_BINARY_DIR})
+
+add_custom_target(MAIN python2.7 ${SOURCE_DIR}/main.py
+                  ${DATASETS_DIR}/Chars74K/English/Fnt
                   ${CMAKE_BINARY_DIR})

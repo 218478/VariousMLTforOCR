@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-from tempfile import TemporaryFile
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential, model_from_json
@@ -9,28 +8,21 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
 
 import numpy as np
-import argparse, logging, os, sys, math, json, shutil
+import argparse, logging, os, sys, math, json, cv2
 from PIL import Image, ImageOps
 
 
 # CONSTANTS
 batch_size = 128
-epochs = 4
+epochs = 2
 
 maxsize = (16, 16)
-classNo = 62
-toolbar_width = classNo
 
-
-MYPATH = '/home/kkuczaj/Praca_inzynierska/VariousMLTforOCR/datasets/Chars74K/English/Fnt'
-TEST_PATH = "C:\Users\kamil\Pictures\database2\/test"
-TRAIN_PATH = "C:\Users\kamil\Pictures\database2\/train"
-    
 
 
 
 class Reader_Chars74K:
-    def __init__(self, filepath):
+    def __init__(self, filepath, classNo):
         """
         Reads Chars74K dataset and returns 2D array of filepaths. The first
         value is the class no (derived from the directory name) and the second
@@ -38,8 +30,8 @@ class Reader_Chars74K:
         """
         dirs = os.listdir(filepath)
         print ("Read " + str(len(dirs)) + " classes")
-        global classNo # because it was referenced before assignment
-        filepaths = [[]]*classNo # hard coded
+        self.classNo = classNo
+        filepaths = [[]]*self.classNo # hard coded
         i = 0
         for root, dirs, files in os.walk(filepath):
             path = root.split(os.sep)
@@ -53,16 +45,20 @@ class Reader_Chars74K:
                 currentScannedClass = int(path[-1][-3:]) - 1 # because the number is starting from 1
                 filepaths[currentScannedClass] = filepathsForSpecificClass
         self.filepaths = filepaths
+        self.createReadableLabels()
     
-    def createLabels(self):
+    def createReadableLabels(self):
         """
         This function describes, and assigns the class to the number.
         Specific to Chars74K dataset.
         """
-        myLabels = [str(i) for i in range(0,10)]
-        myLabels.append(["capital_" + chr(i) for i in range(65,91)])
-        myLabels.append(["small_" + chr(i) for i in range(97,123)])
-        self.labels = myLabels
+        self.readableLabels = [[]]*self.classNo
+        for i in range(0,10):
+            self.readableLabels[i] = str(i)
+        for i in range(65,91):
+            self.readableLabels[i-55] = "capital_" + chr(i)
+        for i in range(97,123):
+            self.readableLabels[i-61] = "small_" + chr(i)
 
     def getWhiteImageBlackBackground(self, image):
         """
@@ -74,7 +70,7 @@ class Reader_Chars74K:
         else:
             return image
 
-    def getTupleOfImages(self, trainSetProportion):
+    def loadImagesIntoMemory(self, trainSetProportion, maxsize):
         """
         Returns a tuple of images. trainSetProportion must be between (0; 1.0). It describes
         what part of the images are used for training and what part for testing.
@@ -85,54 +81,44 @@ class Reader_Chars74K:
         !!! This function also makes sure the images are converted to maxsize (usually 16x16) but
         this can be changed by setting the maxsize variable !!!
         """
-        counts = np.zeros([len(self.filepaths[0]),1])
-        global classNo # because it was referenced before assignment
+        counts = np.empty((len(self.filepaths),1))
         for idx, val in enumerate(self.filepaths): # counting images in every class
             counts[idx] = len(val) # TODO: use this value in the for loop below and use list comprehension
-        print ("Filenames array size: " + str((sys.getsizeof(self.filepaths[0]) + sys.getsizeof(self.filepaths[1]))*classNo/1024) + " kB")
+        print ("Filenames array size: " + str((sys.getsizeof(self.filepaths[0]) + sys.getsizeof(self.filepaths[1]))*self.classNo/1024) + " kB")
         print ("Read: " + str(len(self.filepaths[1]*len(self.filepaths))))
         print ("Reading images into memory")
-        print("I have %d classes" % classNo)
+        print("I have %d classes" % self.classNo)
 
+        toolbar_width = self.classNo - 1
         sys.stdout.write("[%s]" % (" " * toolbar_width))
         sys.stdout.flush()
         sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
-        # trainCount = int(math.floor(int(sum(counts))*trainSetProportion))
-        # testCount = int(sum(counts)) - trainCount
-        # TODO: please change it
-        trainCountPerClass = 900
-        testCountPerClass = 116
+        self.trainCountPerClass = np.ceil(counts*trainSetProportion).astype(int)
+        self.testCountPerClass = (counts - self.trainCountPerClass).astype(int)
 
-        trainSet = np.empty((classNo*trainCountPerClass,maxsize[0],maxsize[1])) # TODO: remove hard coding
-        trainLabels = np.empty((trainCountPerClass*classNo))
-        testSet = np.empty((classNo*testCountPerClass,maxsize[0],maxsize[1])) # TODO: remove hard coding
-        testLabels = np.empty((testCountPerClass*classNo))
-        for imgClass in range(0, classNo-1): # TODO: change 
+        self.trainSet = np.empty((sum(self.trainCountPerClass)[0],maxsize[0],maxsize[1]))
+        self.trainLabels = np.empty((sum(self.trainCountPerClass)[0]))
+        self.testSet = np.empty((sum(self.testCountPerClass)[0],maxsize[0],maxsize[1]))
+        self.testLabels = np.empty((sum(self.testCountPerClass)[0]))
+        for imgClass in range(0, self.classNo-1):
             idx = 0
             for filepath in self.filepaths[imgClass]:
                 image = Image.open(filepath, mode="r")
                 image.thumbnail(maxsize, Image.ANTIALIAS)
                 image = self.getWhiteImageBlackBackground(image) # negates
-                if idx < trainCountPerClass:
-                    trainSet[imgClass*trainCountPerClass+idx] = np.array(image)
-                    trainLabels[imgClass*trainCountPerClass+idx] = imgClass
+                if idx < self.trainCountPerClass[imgClass]:
+                    self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx] = np.array(image)
+                    self.trainLabels[imgClass*self.trainCountPerClass[imgClass]+idx] = imgClass
                 else:
-                    testSet[imgClass*testCountPerClass + idx-trainCountPerClass] = np.array(image)
-                    testLabels[imgClass*testCountPerClass + idx-trainCountPerClass] = imgClass
+                    self.testSet[imgClass*self.testCountPerClass[imgClass] + idx-self.trainCountPerClass[imgClass]] = np.array(image)
+                    self.testLabels[imgClass*self.testCountPerClass[imgClass] + idx-self.trainCountPerClass[imgClass]] = imgClass
                 idx += 1
             sys.stdout.write("-")
             sys.stdout.flush()
 
         sys.stdout.write("\n")
-        print ("Length of read trainDataset: " + str(trainSet.shape))
-        print ("Length of read testDataset: " + str(testSet.shape))
-        return trainLabels, trainSet, testLabels, testSet
-
-    def loadImages(self, (trainLabels, trainSet, testLabels, testSet)):
-        self.trainLabels = trainLabels
-        self.trainSet = trainSet
-        self.testLabels = testLabels
-        self.testSet = testSet
+        print ("Length of read trainDataset: " + str(self.trainSet.shape))
+        print ("Length of read testDataset: " + str(self.testSet.shape))
 
     def saveArrayToFile(self, outfile):
         for_saving = np.array((self.trainLabels, self.trainSet, self.testLabels, self.testSet))
@@ -143,89 +129,138 @@ class Reader_Chars74K:
     def loadArraysFromFile(self, infile):
         inffile = file(infile, 'r')
         self.trainLabels, self.trainSet, self.testLabels, self.testSet = np.load(infile)
+        print ("Loaded")
+        print ("Length of training set: " + str(len(self.trainSet)))
+        print ("Length of test set: " + str(len(self.testSet)))
 
+    def reshapeData(self, maxsize):
+        img_rows = maxsize[0]
+        img_cols = maxsize[1]
+        if K.image_data_format() == 'channels_first':
+            self.trainSet = self.trainSet.reshape(self.trainSet.shape[0], 1, img_rows, img_cols)
+            self.testSet = self.testSet.reshape(self.testSet.shape[0], 1, img_rows, img_cols)
+        else:
+            self.trainSet = self.trainSet.reshape(self.trainSet.shape[0], img_rows, img_cols, 1)
+            self.testSet = self.testSet.reshape(self.testSet.shape[0], img_rows, img_cols, 1)
 
-def main():
-    r = Reader_Chars74K(MYPATH)
-    # r.loadImages(r.getTupleOfImages(0.8))
-    # outfile = "temp_to_save_np_array.temp"
+        print ("Shape after reshape: " + str(self.trainSet.shape[0]))
+        self.trainSet = self.trainSet.astype('float32')
+        self.testSet = self.testSet.astype('float32')
+        self.trainSet /= 255
+        self.testSet /= 255
+        print('self.trainSet shape:', self.trainSet.shape)
+        print(self.trainSet.shape[0], 'train samples')
+        print('self.testSet shape:', self.testSet.shape)
+        print(self.testSet.shape[0], 'test samples')
+
+        self.trainLabels = keras.utils.to_categorical(self.trainLabels, self.classNo)
+        self.testLabels = keras.utils.to_categorical(self.testLabels, self.classNo)
+
+class modelCNN:
+    def __init__(self, maxsize, classNo, filepath=None):
+        """
+        Filename -> link to .h5 file.
+        maxsize -> imsize height by width (16 16)
+        """
+        self.maxsize = maxsize
+        if filepath is not None:
+            self.loadKerasModel(filepath)
+            print("Loaded model from file")
+        else:
+            img_rows = self.maxsize[0]
+            img_cols = self.maxsize[1]
+            if K.image_data_format() == 'channels_first':
+                input_shape = (1, img_rows, img_cols)
+            else:
+                input_shape = (img_rows, img_cols, 1)
+            self.model = Sequential()
+            self.model.add(Conv2D(32, kernel_size=(3, 3),
+                      activation='relu',
+                      input_shape=input_shape))
+            self.model.add(Conv2D(64, (3, 3), activation='relu'))
+            self.model.add(MaxPooling2D(pool_size=(2, 2)))
+            self.model.add(Dropout(0.25))
+            self.model.add(Flatten())
+            self.model.add(Dense(128, activation='relu'))
+            self.model.add(Dropout(0.5))
+            self.model.add(Dense(classNo, activation='softmax'))
+            self.model.compile(loss=keras.losses.categorical_crossentropy,
+                               optimizer = keras.optimizers.Adadelta(),
+                               metrics=['accuracy'])
+
+    def fit(self, trainSet, testSet, trainLabels, testLabels, batch_size, epochs):
+        self.model.fit(trainSet, trainLabels,
+                  batch_size=batch_size,
+                  epochs=epochs,
+                  verbose=1,
+                  validation_data=(testSet, testLabels))
+        score = self.model.evaluate(testSet, testLabels, verbose=0)
+        print('Test loss:', score[0])
+        print('Test accuracy:', score[1])
+        
+
+    def loadKerasModel(self, filepath):
+        self.model = keras.models.load_model(filepath)
+
+    def saveKerasModel(self, filepath = "trained_model.h5"):
+        self.model.save(filepath)
+
+    def predict(self, image):
+        """
+        image is an opencv image. This function will resize it to the size, when it was trained
+
+        TODO: how to know the size when image is loaded
+        """
+        image = cv2.resize(image, (16,16), interpolation=cv2.INTER_AREA)
+        image = cv2.bitwise_not(image)
+        cv2.imwrite("converted.jpg", image)
+        values = self.model.predict(image.reshape(1,16,16,1), verbose=1)
+        return values.argmax()
+
+def main(filepath):
+    classNo = 62
+    r = Reader_Chars74K(filepath, classNo)
+    # r.loadImagesIntoMemory(0.8, maxsize)
+    outfile = "temp_to_save_np_array.temp"
     # r.saveArrayToFile(outfile)
     # exit()
-    outfile = "temp_to_save_np_array.temp"
-    # outfile = file(outfile, 'r')
-    # trainLabels, trainSet, testLabels, testSet = np.load(outfile)
     r.loadArraysFromFile(outfile)
-    print ("Loaded")
-    print ("Length of training set: " + str(len(r.trainSet)))
-    print ("Length of test set: " + str(len(r.testSet)))
-    print ("Shape before reshape: " + str(r.trainSet.shape[0]))
-    img_rows = maxsize[0]
-    img_cols = maxsize[1]
-    if K.image_data_format() == 'channels_first':
-        r.trainSet = r.trainSet.reshape(r.trainSet.shape[0], 1, img_rows, img_cols)
-        r.testSet = r.testSet.reshape(r.testSet.shape[0], 1, img_rows, img_cols)
-        input_shape = (1, img_rows, img_cols)
-    else:
-        r.trainSet = r.trainSet.reshape(r.trainSet.shape[0], img_rows, img_cols, 1)
-        r.testSet = r.testSet.reshape(r.testSet.shape[0], img_rows, img_cols, 1)
-        input_shape = (img_rows, img_cols, 1)
+    r.reshapeData(maxsize)
 
-    print ("Shape after reshape: " + str(r.trainSet.shape[0]))
-    r.trainSet = r.trainSet.astype('float32')
-    r.testSet = r.testSet.astype('float32')
-    r.trainSet /= 255
-    r.testSet /= 255
-    print('r.trainSet shape:', r.trainSet.shape)
-    print(r.trainSet.shape[0], 'train samples')
-    print('r.testSet shape:', r.testSet.shape)
-    print(r.testSet.shape[0], 'test samples')
+    # temp1 = r.testSet[2040]/32
+    # for row in temp1:
+    #     for cell in row:
+    #         sys.stdout.write("%d " % cell)
+    #     sys.stdout.write("\n")
+    # print(r.testLabels[2040])
 
-    r.trainLabels = keras.utils.to_categorical(r.trainLabels, classNo)
-    r.testLabels = keras.utils.to_categorical(r.testLabels, classNo)
+    # temp2 = r.testSet[4816]/32
+    # for row in temp2:
+    #     for cell in row:
+    #         if np.isclose(cell, 0):
+    #             sys.stdout.write("  ")
+    #         else:
+    #             sys.stdout.write("%d " % cell)
+    #     sys.stdout.write("\n")
+    # print(r.testLabels[4816])
 
-
-    model = Sequential()
-    model.add(Conv2D(32, kernel_size=(3, 3),
-                    activation='relu',
-                    input_shape=input_shape))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Dropout(0.25))
-    model.add(Flatten())
-    model.add(Dense(128, activation='relu'))
-    model.add(Dropout(0.5))
-    model.add(Dense(classNo, activation='softmax'))
-
-    model.compile(loss=keras.losses.categorical_crossentropy,
-                optimizer=keras.optimizers.Adadelta(),
-                metrics=['accuracy'])
-
-    model.fit(r.trainSet, r.trainLabels,
-            batch_size=batch_size,
-            epochs=epochs,
-            verbose=1,
-            validation_data=(r.testSet, r.testLabels))
-    score = model.evaluate(r.testSet, r.testLabels, verbose=0)
-    model.save("trained_model.h5")
-    json_string = model.to_json()
-    with open("data.txt",'w') as jfile:
-        json.dump(json_string, jfile)        
-    print('Test loss:', score[0])
-    print('Test accuracy:', score[1])
-    values = model.predict(r.trainSet[2040].reshape(1,16,16,1), verbose=1)
+    model = modelCNN(maxsize, classNo, "trained_model.h5")
+    # model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
+    # model.saveKerasModel()
+    img = cv2.imwrite("/tmp/chuj.jpg", )
+    values = model.predict(r.testSet[2040].reshape(16,16))
     print(values.argmax())
+    print(r.testLabels[2040].argmax())
+
+    # values = model.predict(cv2.image.testSet[4816].reshape(16,16))
+    # print(values.argmax())
+    # print(r.testLabels[4836].argmax())
     exit()
 
 if __name__ == '__main__':
-    # from appJar import gui
-    # # create a GUI variable called app
-    # app = gui()
-    # app.addLabel("title", "Welcome to appJar")
-    # app.setLabelBg("title", "red")
-    # app.go()
     parser = argparse.ArgumentParser()
     parser.add_argument("pathToDatasets", help="Directory to stored datasets")
     parser.add_argument("pathToLogFileDir", help="Path to log file")
     args = parser.parse_args()
     logging.basicConfig(format='%(asctime)s \t %(levelname)s:%(message)s', filename=os.path.join(args.pathToLogFileDir, 'logFile.log'))#, level = logging.INFO)
-    main()
+    main(args.pathToDatasets)
