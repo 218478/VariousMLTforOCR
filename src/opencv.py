@@ -1,4 +1,4 @@
-from __future__ import print_function
+
 
 import numpy as np
 import cv2
@@ -57,15 +57,17 @@ def characterExtraction(pathToImage):
     It then draws a rectangle over it and saves into a new image.
     '''
     img = cv2.imread(pathToImage, 0)
+    origImg = img
     imgCopy = img.copy()
     img = cv2.bitwise_not(img)
     imgCopy = cv2.bitwise_not(imgCopy)
-    img /= 32 # divided to get data into [0,7]
+    img /= 32
+    # img = np.divide(img,32) # divided to get data into [0,7]
     kernel = np.ones((2,2),np.uint8)
     img = cv2.erode(img, kernel)
     imgCopy = cv2.erode(imgCopy, kernel)
     imgCopy = cv2.bitwise_not(imgCopy)
-    cv2.namedWindow(pathToImage, cv2.WINDOW_NORMAL) # lets you resize the window
+    # thread problem cv2.namedWindow(pathToImage, cv2.WINDOW_NORMAL) # lets you resize the window
 
     # TODO: remove printing when sure it's doing proper OCR
 
@@ -125,7 +127,7 @@ def characterExtraction(pathToImage):
         cv2.imshow("cropped_" + str(idx), letter)
         cv2.imwrite("cropped_" + str(idx)+".jpg", letter)
     # cv2.imshow(pathToImage, imgCopy)
-    cv2.waitKey(0)
+    cv2.waitKey()
     cv2.destroyAllWindows()
     return letters
 
@@ -137,7 +139,7 @@ def main(pathToImage):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("pathToImage", help="Directory to stored datasets")
+    parser.add_argument("pathToImage", help="Path to scanned image")
     parser.add_argument("pathToLogFile", help="Path to log file")
     args = parser.parse_args()
     logging.basicConfig(format='%(asctime)s \t %(levelname)s:%(message)s', filename=os.path.join(args.pathToLogFile, 'logFile.log'))#, level = logging.INFO)

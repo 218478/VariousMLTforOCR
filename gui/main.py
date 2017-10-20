@@ -1,21 +1,21 @@
-from __future__ import print_function
 # TODO: consider using PyQt5
-from PyQt4 import QtGui
-import sys, design
+import PyQt5
+import sys, design, cv2
 
 
 class ExampleApp(QtGui.QMainWindow, design.Ui_MainWindow):
     def __init__(self, parent=None):
         super(ExampleApp, self).__init__(parent)
         self.setupUi(self)
+        img = cv2.imread("converted.jpg")
+        height, width, channel = img.shape
+        bytesPerLine = 3 * width
+        qImg = QtGui.QImage(img.data, width, height, bytesPerLine, QImage.Format_RGB888)
+        # qPixMap = QtGui.QPixmap(qImg)
+        # self.frame = qPixMap
 
-def runGUI():    
-    # app = QtGui.QApplication(sys.argv)
-    # window = QtGui.QWidget()
+        
 
-    d = design.Ui_MainWindow
-    window.show()
-    sys.exit(app.exec_()) 
 
 def main():
     app = QtGui.QApplication(sys.argv)

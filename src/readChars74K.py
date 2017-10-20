@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import keras
 from keras.datasets import mnist
 from keras.models import Sequential, model_from_json
@@ -29,13 +27,13 @@ class Reader_Chars74K:
         one holds a vector of filepaths to the files.
         """
         dirs = os.listdir(filepath)
-        print ("Read " + str(len(dirs)) + " classes")
+        print(("Read " + str(len(dirs)) + " classes"))
         self.classNo = classNo
         filepaths = [[]]*self.classNo # hard coded
         i = 0
         for root, dirs, files in os.walk(filepath):
             path = root.split(os.sep)
-            print((len(path) - 1) * '---', os.path.basename(root))
+            print(((len(path) - 1) * '---', os.path.basename(root)))
             filepathsForSpecificClass = []
             for file in files:
                 # print(len(path) * '---', file)
@@ -84,10 +82,10 @@ class Reader_Chars74K:
         counts = np.empty((len(self.filepaths),1))
         for idx, val in enumerate(self.filepaths): # counting images in every class
             counts[idx] = len(val) # TODO: use this value in the for loop below and use list comprehension
-        print ("Filenames array size: " + str((sys.getsizeof(self.filepaths[0]) + sys.getsizeof(self.filepaths[1]))*self.classNo/1024) + " kB")
-        print ("Read: " + str(len(self.filepaths[1]*len(self.filepaths))))
+        print(("Filenames array size: " + str((sys.getsizeof(self.filepaths[0]) + sys.getsizeof(self.filepaths[1]))*self.classNo/1024) + " kB"))
+        print(("Read: " + str(len(self.filepaths[1]*len(self.filepaths)))))
         print ("Reading images into memory")
-        print("I have %d classes" % self.classNo)
+        print(("I have %d classes" % self.classNo))
 
         toolbar_width = self.classNo - 1
         sys.stdout.write("[%s]" % (" " * toolbar_width))
@@ -117,21 +115,21 @@ class Reader_Chars74K:
             sys.stdout.flush()
 
         sys.stdout.write("\n")
-        print ("Length of read trainDataset: " + str(self.trainSet.shape))
-        print ("Length of read testDataset: " + str(self.testSet.shape))
+        print(("Length of read trainDataset: " + str(self.trainSet.shape)))
+        print(("Length of read testDataset: " + str(self.testSet.shape)))
 
     def saveArrayToFile(self, outfile):
         for_saving = np.array((self.trainLabels, self.trainSet, self.testLabels, self.testSet))
-        outfile = file(outfile, 'w')
+        outfile = open(outfile, 'wb')
         np.save(outfile, for_saving)
         outfile.close()
 
     def loadArraysFromFile(self, infile):
-        inffile = file(infile, 'r')
+        infile = open(infile, 'rb')
         self.trainLabels, self.trainSet, self.testLabels, self.testSet = np.load(infile)
         print ("Loaded")
-        print ("Length of training set: " + str(len(self.trainSet)))
-        print ("Length of test set: " + str(len(self.testSet)))
+        print(("Length of training set: " + str(len(self.trainSet))))
+        print(("Length of test set: " + str(len(self.testSet))))
 
     def reshapeData(self, maxsize):
         img_rows = maxsize[0]
@@ -143,15 +141,15 @@ class Reader_Chars74K:
             self.trainSet = self.trainSet.reshape(self.trainSet.shape[0], img_rows, img_cols, 1)
             self.testSet = self.testSet.reshape(self.testSet.shape[0], img_rows, img_cols, 1)
 
-        print ("Shape after reshape: " + str(self.trainSet.shape[0]))
+        print(("Shape after reshape: " + str(self.trainSet.shape[0])))
         self.trainSet = self.trainSet.astype('float32')
         self.testSet = self.testSet.astype('float32')
         self.trainSet /= 255
         self.testSet /= 255
-        print('self.trainSet shape:', self.trainSet.shape)
-        print(self.trainSet.shape[0], 'train samples')
-        print('self.testSet shape:', self.testSet.shape)
-        print(self.testSet.shape[0], 'test samples')
+        print(('self.trainSet shape:', self.trainSet.shape))
+        print((self.trainSet.shape[0], 'train samples'))
+        print(('self.testSet shape:', self.testSet.shape))
+        print((self.testSet.shape[0], 'test samples'))
 
         self.trainLabels = keras.utils.to_categorical(self.trainLabels, self.classNo)
         self.testLabels = keras.utils.to_categorical(self.testLabels, self.classNo)
@@ -195,8 +193,8 @@ class modelCNN:
                   verbose=1,
                   validation_data=(testSet, testLabels))
         score = self.model.evaluate(testSet, testLabels, verbose=0)
-        print('Test loss:', score[0])
-        print('Test accuracy:', score[1])
+        print(('Test loss:', score[0]))
+        print(('Test accuracy:', score[1]))
         
 
     def loadKerasModel(self, filepath):
@@ -245,12 +243,11 @@ def main(filepath):
     # print(r.testLabels[4816])
 
     model = modelCNN(maxsize, classNo, "trained_model.h5")
-    # model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
-    # model.saveKerasModel()
-    img = cv2.imwrite("/tmp/chuj.jpg", )
+    model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
+    model.saveKerasModel()
     values = model.predict(r.testSet[2040].reshape(16,16))
-    print(values.argmax())
-    print(r.testLabels[2040].argmax())
+    print((values.argmax()))
+    print((r.testLabels[2040].argmax()))
 
     # values = model.predict(cv2.image.testSet[4816].reshape(16,16))
     # print(values.argmax())

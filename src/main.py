@@ -1,4 +1,3 @@
-from __future__ import print_function
 from readChars74K import Reader_Chars74K, modelCNN
 
 import argparse, logging, os, cv2
@@ -9,6 +8,7 @@ PATH_TO_LETTER_o = "/home/kkuczaj/Praca_inzynierska/build/cropped_1.jpg"
 PATH_TO_LETTER_d = "/home/kkuczaj/Praca_inzynierska/build/cropped_2.jpg"
 PATH_TO_LETTER_e = "/home/kkuczaj/Praca_inzynierska/build/cropped_3.jpg"
 PATH_TO_LETTER_l = "/home/kkuczaj/Praca_inzynierska/build/cropped_4.jpg"
+PATH_TO_LETTER_s = "/home/kkuczaj/Praca_inzynierska/build/cropped_5.jpg"
 
 def main(filepath):
     classNo = 62
@@ -20,16 +20,19 @@ def main(filepath):
     img_d = cv2.cvtColor(cv2.imread(PATH_TO_LETTER_d),cv2.COLOR_BGR2GRAY) # grayscale image read
     img_e = cv2.cvtColor(cv2.imread(PATH_TO_LETTER_e),cv2.COLOR_BGR2GRAY) # grayscale image read
     img_l = cv2.cvtColor(cv2.imread(PATH_TO_LETTER_l),cv2.COLOR_BGR2GRAY) # grayscale image read
-    print(m.predict(img_M))
-    print(r.readableLabels[m.predict(img_M)])
-    print(m.predict(img_o))
-    print(r.readableLabels[m.predict(img_o)])
-    print(m.predict(img_d))
-    print(r.readableLabels[m.predict(img_d)])
-    print(m.predict(img_e))
-    print(r.readableLabels[m.predict(img_e)])
-    print(m.predict(img_l))
-    print(r.readableLabels[m.predict(img_l)])
+    img_s = cv2.cvtColor(cv2.imread(PATH_TO_LETTER_s),cv2.COLOR_BGR2GRAY) # grayscale image read
+    print((m.predict(img_M)))
+    print((r.readableLabels[m.predict(img_M)]))
+    print((m.predict(img_o)))
+    print((r.readableLabels[m.predict(img_o)]))
+    print((m.predict(img_d)))
+    print((r.readableLabels[m.predict(img_d)]))
+    print((m.predict(img_e)))
+    print((r.readableLabels[m.predict(img_e)]))
+    print((m.predict(img_l)))
+    print((r.readableLabels[m.predict(img_l)]))
+    print((m.predict(img_s)))
+    print((r.readableLabels[m.predict(img_s)]))
 
 
 if __name__ == '__main__':

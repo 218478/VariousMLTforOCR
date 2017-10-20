@@ -23,7 +23,7 @@ def readMNIST(dataset = "training", path = "."):
         fname_img = os.path.join(path, 't10k-images-idx3-ubyte')
         fname_lbl = os.path.join(path, 't10k-labels-idx1-ubyte')
     else:
-        raise ValueError, "dataset must be 'testing' or 'training'"
+        raise ValueError % "dataset must be 'testing' or 'training'"
 
     # Load everything in some numpy arrays
     with open(fname_lbl, 'rb') as flbl:
@@ -37,7 +37,7 @@ def readMNIST(dataset = "training", path = "."):
     get_img = lambda idx: (lbl[idx], img[idx])
 
     # Create an iterator which returns each image in turn
-    for i in xrange(len(lbl)):
+    for i in range(len(lbl)):
         yield get_img(i)
 
 def show(image):
@@ -58,8 +58,8 @@ def printInfoToConsole(image):
     """
     Info about number and image dimensions.
     """
-    print image[0]
-    print "Dim: " + str(len(image[1])) + " x " + str(len(image[1][1]))
+    print((image[0]))
+    print(("Dim: " + str(len(image[1])) + " x " + str(len(image[1][1]))))
 
 def getHorizontalAndVerticalHistogram(image):
     """
@@ -68,21 +68,21 @@ def getHorizontalAndVerticalHistogram(image):
     """
     vertical = [0]*len(image[1]) # initialized with zeros
     horizontal = [0]*len(image[1][0]) # initialized with zeros
-    for i in xrange(0, len(image[1])):
-        for j in xrange(0, len(image[1][i])):
+    for i in range(0, len(image[1])):
+        for j in range(0, len(image[1][i])):
             horizontal[j] += image[1][i][j]
             vertical[i] += image[1][i][j]
 
-    print vertical
-    print horizontal
+    print(vertical)
+    print(horizontal)
     return vertical, horizontal
 
 def binarize(image):
     """
     Binarizes the MNIST image. Usage: binarize(image)
     """
-    for i in xrange(0, len(image[1])):
-        for j in xrange(0, len(image[1][i])):
+    for i in range(0, len(image[1])):
+        for j in range(0, len(image[1][i])):
             if image[1][i][j] > 0:
                 image[1][i][j] = 1
 
@@ -103,7 +103,7 @@ def displayNImages(n, pathToDatasets):
         # if i > n-1:
         #     break
 
-    print i
+    print(i)
 
 def countSimilarity(image, patternSet, binarized = True):
     """
@@ -129,7 +129,7 @@ def countSimilarity(image, patternSet, binarized = True):
 
 def chooseNeighbor(simArray, n = 7):
     a = [0]*10 # change to np.zeros()
-    for i in xrange(0, n):
+    for i in range(0, n):
         a[simArray[i][0]] += 1
     return a.index(max(a))
 
@@ -153,9 +153,9 @@ def kNNforMNIST(images, n):
             break
 
     stop = time.clock()
-    print "skutecznosc: " + str(float(successNo)/(successNo+failuresNo))
-    print "czas calkowity: " + str(stop-start)
-    print "czas na probke: " + str(float(stop-start)/(successNo+failuresNo))
+    print(("skutecznosc: " + str(float(successNo)/(successNo+failuresNo))))
+    print("czas calkowity: " + str(stop-start))
+    print("czas na probke: " + str(float(stop-start)/(successNo+failuresNo)))
     exit()
 
 # TODO: change the name of n variable
