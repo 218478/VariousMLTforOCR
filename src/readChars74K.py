@@ -1,10 +1,6 @@
-import keras
-from keras.datasets import mnist
-from keras.models import Sequential, model_from_json
-from keras.layers import Dense, Dropout, Flatten
-from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
-
+import keras
+from cnn import modelCNN
 import numpy as np
 import argparse, logging, os, sys, math, json, cv2
 from PIL import Image, ImageOps
@@ -15,8 +11,6 @@ batch_size = 128
 epochs = 2
 
 maxsize = (16, 16)
-
-
 
 
 class Reader_Chars74K:
@@ -154,55 +148,6 @@ class Reader_Chars74K:
         self.trainLabels = keras.utils.to_categorical(self.trainLabels, self.classNo)
         self.testLabels = keras.utils.to_categorical(self.testLabels, self.classNo)
 
-class modelCNN:
-    def __init__(self, maxsize, classNo, filepath=None):
-        """
-        Filename -> link to .h5 file.
-        maxsize -> imsize height by width (16 16)
-        """
-        self.maxsize = maxsize
-        if filepath is not None:
-            self.loadKerasModel(filepath)
-            print("Loaded model from file")
-        else:
-            img_rows = self.maxsize[0]
-            img_cols = self.maxsize[1]
-            if K.image_data_format() == 'channels_first':
-                input_shape = (1, img_rows, img_cols)
-            else:
-                input_shape = (img_rows, img_cols, 1)
-            self.model = Sequential()
-            self.model.add(Conv2D(32, kernel_size=(3, 3),
-                      activation='relu',
-                      input_shape=input_shape))
-            self.model.add(Conv2D(64, (3, 3), activation='relu'))
-            self.model.add(MaxPooling2D(pool_size=(2, 2)))
-            self.model.add(Dropout(0.25))
-            self.model.add(Flatten())
-            self.model.add(Dense(128, activation='relu'))
-            self.model.add(Dropout(0.5))
-            self.model.add(Dense(classNo, activation='softmax'))
-            self.model.compile(loss=keras.losses.categorical_crossentropy,
-                               optimizer = keras.optimizers.Adadelta(),
-                               metrics=['accuracy'])
-
-    def fit(self, trainSet, testSet, trainLabels, testLabels, batch_size, epochs):
-        self.model.fit(trainSet, trainLabels,
-                  batch_size=batch_size,
-                  epochs=epochs,
-                  verbose=1,
-                  validation_data=(testSet, testLabels))
-        score = self.model.evaluate(testSet, testLabels, verbose=0)
-        print(('Test loss:', score[0]))
-        print(('Test accuracy:', score[1]))
-        
-
-    def loadKerasModel(self, filepath):
-        self.model = keras.models.load_model(filepath)
-
-    def saveKerasModel(self, filepath = "trained_model.h5"):
-        self.model.save(filepath)
-
     def predict(self, image):
         """
         image is an opencv image. This function will resize it to the size, when it was trained
@@ -211,7 +156,7 @@ class modelCNN:
         """
         image = cv2.resize(image, (16,16), interpolation=cv2.INTER_AREA)
         image = cv2.bitwise_not(image)
-        cv2.imwrite("converted.jpg", image)
+        # cv2.imwrite("converted.jpg", image)
         values = self.model.predict(image.reshape(1,16,16,1), verbose=1)
         return values.argmax()
 
@@ -243,6 +188,7 @@ def main(filepath):
     # print(r.testLabels[4816])
 
     model = modelCNN(maxsize, classNo, "trained_model.h5")
+    # model = modelMLP(maxsize, classNo, "trained_model.h5") it works but needs file to be imported
     model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
     model.saveKerasModel()
     values = model.predict(r.testSet[2040].reshape(16,16))

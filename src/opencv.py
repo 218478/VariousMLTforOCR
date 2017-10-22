@@ -124,7 +124,7 @@ def characterExtraction(pathToImage):
 
     # for function verification
     for idx, letter in enumerate(letters):
-        cv2.imshow("cropped_" + str(idx), letter)
+        # cv2.imshow("cropped_" + str(idx), letter)
         cv2.imwrite("cropped_" + str(idx)+".jpg", letter)
     # cv2.imshow(pathToImage, imgCopy)
     cv2.waitKey()

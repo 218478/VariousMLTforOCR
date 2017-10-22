@@ -2,53 +2,236 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>640</width>
-    <height>480</height>
-   </rect>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>550</width>
+    <height>550</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>550</width>
+    <height>550</height>
+   </size>
   </property>
   <property name="windowTitle">
-   <string>MainWindow</string>
+   <string>Various Machine Learning Techniques for OCR</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QPushButton" name="pushButtonLoadFile">
+   <widget class="QWidget" name="">
     <property name="geometry">
      <rect>
-      <x>500</x>
-      <y>100</y>
-      <width>79</width>
-      <height>24</height>
+      <x>30</x>
+      <y>30</y>
+      <width>501</width>
+      <height>491</height>
      </rect>
     </property>
-    <property name="text">
-     <string>Load File</string>
-    </property>
+    <layout class="QGridLayout" name="gridLayout">
+     <property name="sizeConstraint">
+      <enum>QLayout::SetFixedSize</enum>
+     </property>
+     <item row="0" column="1">
+      <widget class="QGroupBox" name="groupBoxController">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>246</width>
+         <height>242</height>
+        </size>
+       </property>
+       <property name="title">
+        <string>Menu</string>
+       </property>
+       <widget class="QPushButton" name="pushButtonLoadFile">
+        <property name="geometry">
+         <rect>
+          <x>130</x>
+          <y>110</y>
+          <width>79</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Load images you want to recognize characters in</string>
+        </property>
+        <property name="text">
+         <string>Load File</string>
+        </property>
+       </widget>
+       <widget class="QPushButton" name="pushButtonCamera">
+        <property name="geometry">
+         <rect>
+          <x>30</x>
+          <y>110</y>
+          <width>79</width>
+          <height>24</height>
+         </rect>
+        </property>
+        <property name="toolTip">
+         <string>Load images you want to recognize characters in</string>
+        </property>
+        <property name="text">
+         <string>Camera</string>
+        </property>
+       </widget>
+       <widget class="QWidget" name="">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>20</y>
+          <width>211</width>
+          <height>42</height>
+         </rect>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout">
+         <item>
+          <widget class="QLabel" name="labelAlgorithmChoice">
+           <property name="text">
+            <string>Choose an algorithm</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QComboBox" name="comboBoxAlgorithms"/>
+         </item>
+        </layout>
+       </widget>
+      </widget>
+     </item>
+     <item row="1" column="0">
+      <widget class="QGroupBox" name="groupBoxImageAfterOCR">
+       <property name="minimumSize">
+        <size>
+         <width>247</width>
+         <height>241</height>
+        </size>
+       </property>
+       <property name="title">
+        <string>Image after recognition</string>
+       </property>
+       <widget class="QLabel" name="labelImageAfterOCR">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>220</width>
+          <height>200</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>220</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QGroupBox" name="groupBoxTextOCR">
+       <property name="minimumSize">
+        <size>
+         <width>246</width>
+         <height>241</height>
+        </size>
+       </property>
+       <property name="title">
+        <string>Recognized Text</string>
+       </property>
+       <widget class="QTextBrowser" name="textBrowser">
+        <property name="geometry">
+         <rect>
+          <x>10</x>
+          <y>30</y>
+          <width>220</width>
+          <height>200</height>
+         </rect>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>220</width>
+          <height>200</height>
+         </size>
+        </property>
+       </widget>
+      </widget>
+     </item>
+     <item row="0" column="0">
+      <widget class="QGroupBox" name="groupBoxLoadImage">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>247</width>
+         <height>242</height>
+        </size>
+       </property>
+       <property name="title">
+        <string>Loaded Image</string>
+       </property>
+       <widget class="QLabel" name="labelImage">
+        <property name="geometry">
+         <rect>
+          <x>20</x>
+          <y>30</y>
+          <width>220</width>
+          <height>200</height>
+         </rect>
+        </property>
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>220</width>
+          <height>200</height>
+         </size>
+        </property>
+        <property name="text">
+         <string/>
+        </property>
+       </widget>
+      </widget>
+     </item>
+    </layout>
    </widget>
-   <widget class="QWidget" name="widgetImg" native="true">
-    <property name="geometry">
-     <rect>
-      <x>80</x>
-      <y>130</y>
-      <width>241</width>
-      <height>211</height>
-     </rect>
-    </property>
-   </widget>
+   <zorder>label</zorder>
+   <zorder>groupBoxLoadImage</zorder>
+   <zorder>groupBoxTextOCR</zorder>
+   <zorder>groupBoxController</zorder>
+   <zorder>groupBoxImageAfterOCR</zorder>
+   <zorder>groupBoxLoadImage</zorder>
   </widget>
-  <widget class="QMenuBar" name="menubar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>640</width>
-     <height>19</height>
-    </rect>
+  <widget class="QStatusBar" name="statusBar">
+   <property name="layoutDirection">
+    <enum>Qt::LeftToRight</enum>
    </property>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
  </widget>
  <resources/>
  <connections/>

@@ -179,13 +179,6 @@ def createPatternSetForKNN(images, classesNo, n=10):
     return patternSet
     
 if __name__ == '__main__':
-    # from appJar import gui
-    # # create a GUI variable called app
-    # app = gui()
-    # app.addLabel("title", "Welcome to appJar")
-    # app.setLabelBg("title", "red")
-    # app.go()
-
     parser = argparse.ArgumentParser()
     parser.add_argument("pathToDatasets", help="Directory to stored datasets")
     parser.add_argument("pathToLogFile", help="Path to log file")
