@@ -1,18 +1,22 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
 from PyQt5.QtGui import QPixmap, QImage
+import sys, cv2, os, argparse
+
+# TODO: check the standard of the order of importing packages and own files
 from design import Ui_MainWindow
-import sys, cv2, os
-    
+from cnn import modelCNN
+from opencv import TextExtractor    
 
 class myGUI(QMainWindow):
-    def  __init__(self):
+    def  __init__(self, pathToNNModels, pathToSeparatedChars):
         super().__init__()
+        self.pathToNNModels = pathToNNModels
+        self.pathToSeparatedChars = pathToSeparatedChars
         self.ui = Ui_MainWindow()
         self.setup()
         # TODO: think about making those paramters visible or modifiable
         maxsize = (16, 16)
         classNo = 62
-        self.model = modelCNN(maxsize, classNo, "trained_model.h5")
         self.show()
 
     def setup(self):
@@ -26,24 +30,43 @@ class myGUI(QMainWindow):
         self.filename = QFileDialog.getOpenFileName()
         self.ui.labelImage.setScaledContents(True)
         self.ui.labelImage.setPixmap(QPixmap(self.filename[0]))
+        self.doOCR()
+        
+    def doOCR(self):
+        self.textExtractor = TextExtractor(self.filename)
+        if self.ui.comboBoxAlgorithms.currentIndex == 0:
+            self.model = modelCNN(maxsize, classNo, "trained_model.h5")
+            print("Convolutional Neural Network")
+        
+        if self.ui.comboBoxAlgorithms.currentIndex == 1:
+            print("Multilayer Perceptron Neural Network")
+        
+        if self.ui.comboBoxAlgorithms.currentIndex == 2:
+            print("k Nearest Neighbors")
+        
+    
 
     def setupCamera(self):
         print("TODO: implement camera functionality")
 
     def setupComboBox(self):
         self.ui.comboBoxAlgorithms.addItem("Convolutional Neural Network")
+        self.ui.comboBoxAlgorithms.addItem("Multilayer Perceptron Neural Network")
         self.ui.comboBoxAlgorithms.addItem("k Nearest Neighbors")
         self.ui.comboBoxAlgorithms.currentIndexChanged.connect(
             lambda: print(self.ui.comboBoxAlgorithms.currentIndex()))
 
 
-def main():
+def main(pathToNNModels, pathToSeparatedChars):
     app = QApplication(sys.argv)
-    m = myGUI()
+    m = myGUI(pathToNNModels, pathToSeparatedChars)
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
-    sys.path.append(os.path.join(os.getcwd(),"../src"))
-    from cnn import modelCNN
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("pathToNNModels", help="Directory to stored neural networks models")
+    parser.add_argument("pathToSeparatedChars", help="Directory to where separated characters will be stored")
+    parser.add_argument("pathToLogFileDir", help="Path to log file")
+    args = parser.parse_args()
+    main(args.pathToNNModels, args.pathToSeparatedChars)

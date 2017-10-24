@@ -1,8 +1,11 @@
 from  nn import myNN
+from keras import backend as K
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
 from keras.optimizers import RMSprop
 
+
+# TODO: neurons do not match
 class modelMLP(myNN):
     def __init__(self, maxsize, classNo, filepath=None):
         """
@@ -21,16 +24,16 @@ class modelMLP(myNN):
             else:
                 input_shape = (img_rows, img_cols, 1)
             self.model = Sequential()
-            model.add(Dense(512, activation='relu',
+            self.model.add(Dense(512, activation='relu',
                             input_shape=input_shape))
-            model.add(Dropout(0.2))
-            model.add(Dense(512, activation='relu'))
-            model.add(Dropout(0.2))
-            model.add(Dense(num_classes, activation='softmax'))
+            self.model.add(Dropout(0.2))
+            self.model.add(Dense(512, activation='relu'))
+            self.model.add(Dropout(0.2))
+            self.model.add(Dense(classNo, activation='softmax'))
 
-            model.summary()
+            self.model.summary()
 
-            model.compile(loss='categorical_crossentropy',
+            self.model.compile(loss='categorical_crossentropy',
                         optimizer=RMSprop(),
                         metrics=['accuracy'])
 

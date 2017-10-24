@@ -1,6 +1,7 @@
 from keras import backend as K
 import keras
 from cnn import modelCNN
+# from mlp import modelMLP
 import numpy as np
 import argparse, logging, os, sys, math, json, cv2
 from PIL import Image, ImageOps
@@ -188,7 +189,7 @@ def main(filepath):
     # print(r.testLabels[4816])
 
     model = modelCNN(maxsize, classNo, "trained_model.h5")
-    # model = modelMLP(maxsize, classNo, "trained_model.h5") it works but needs file to be imported
+    # model = modelMLP(maxsize, classNo)#, "trained_model.h5") it works but needs file to be imported
     model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
     model.saveKerasModel()
     values = model.predict(r.testSet[2040].reshape(16,16))
