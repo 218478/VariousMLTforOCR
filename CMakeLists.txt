@@ -4,7 +4,7 @@ project("Kuczaj Kamil - Praca inzynierska")
 find_package(OpenCV REQUIRED) # OpenCV 3
 include(GNUInstallDirs)
 find_package(PythonInterp 3.5 REQUIRED)
-# find_package(PythonLibs 3.5 REQUIRED) # problematic
+find_package(PythonLibs 3.5 REQUIRED)
 # TODO: automatic proper python3 finder
 set(PYTHON_INTERPRETER3 python3)
 set(PYTHON_INTERPRETER2 python2)
@@ -25,7 +25,7 @@ add_custom_target(chars74k_ocr ${PYTHON_INTERPRETER3} ${SOURCE_DIR}/readChars74K
                   ${CMAKE_BINARY_DIR})
 
 # TODO: switch opencv to python3
-add_custom_target(vision ${PYTHON_INTERPRETER2} ${SOURCE_DIR}/opencv.py
+add_custom_target(vision ${PYTHON_INTERPRETER3} ${SOURCE_DIR}/opencv.py
                   ${DATASETS_DIR}/models.png
                   ${DATASETS_DIR}/textFragment.png
                   ${CMAKE_BINARY_DIR})

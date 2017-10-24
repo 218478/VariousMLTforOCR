@@ -1,14 +1,18 @@
 import numpy as np
 import sys, cv2, os, argparse, logging, glob
-import pathlib2
+import pathlib
+import multiprocessing
 
-# TODO: promote to opencv3
+# TODO: promote to python3
 class TextExtractor():
     def __init__(self, pathToImage = None):
         self.pathToImage = pathToImage
 
     def setPathToImage(self, newPath):
         self.pathToImage = newPath
+
+    def erodeImg(self, img, kernel):
+        return cv2.erode(img, kernel)
 
     def characterExtraction(self, pathToSave):
         '''
@@ -35,12 +39,22 @@ class TextExtractor():
         origImg = img
         imgCopy = img.copy()
         img = cv2.bitwise_not(img)
+        print("first")
         imgCopy = cv2.bitwise_not(imgCopy)
-        img /= 32
+        print("second")
+        # img /= 32 it was not working on python3
+        for row in img:
+            for pixel in row:
+                pixel /= 32
         # img = np.divide(img,32) # divided to get data into [0,7]
         kernel = np.ones((2,2),np.uint8)
+        # pool = multiprocessing.pool.ThreadPool(processes=1)
+        # img = pool.map(self.erodeImg, img, kernel)
+        
         img = cv2.erode(img, kernel)
-        imgCopy = cv2.erode(imgCopy, kernel)
+        print("third")
+        # imgCopy = pool.map(self.erodeImg, img, kernel)
+        # imgCopy = cv2.erode(imgCopy, kernel)
         imgCopy = cv2.bitwise_not(imgCopy)
         # thread problem cv2.namedWindow(self.pathToImage, cv2.WINDOW_NORMAL) # lets you resize the window
 
@@ -98,11 +112,14 @@ class TextExtractor():
                 letters = letters + (imgCopy[upperBorder:lowerBorder, x1:x2],)
 
         
-        dir_name = self.pathToImage.split('.')[0] # switch to self.contours later
+        dir_name = os.path.basename(self.pathToImage).split('.')[0] # switch to self.contours later
+        print("creating dir: " +str(os.path.join(pathToSave, dir_name)))
+        pathlib.Path(pathToSave, dir_name).mkdir(parents=True, exist_ok=True) # mkdir -p
         for idx, letter in enumerate(letters):
             # cv2.imshow("cropped_" + str(idx), letter)
-            pathlib2.Path(pathToSave, dir_name).mkdir(parents=True, exist_ok=True) # mkdir -p
-            cv2.imwrite(os.path.join(pathToSave,dir_name,"cropped_" + str(idx)+".jpg"), letter)
+            outFile = os.path.join(pathToSave,dir_name,"cropped_" + str(idx)+".jpg")
+            print("Writing " +  str(outFile))
+            cv2.imwrite(outFile, letter)
             # cv2.moveWindow("cropped_" + str(idx), 30*(1+idx), 30*(1+idx))
         # cv2.imshow(self.pathToImage, imgCopy)
         # cv2.waitKey()
@@ -143,10 +160,10 @@ class TextExtractor():
             cv2.rectangle(image,(x,y),(x+w,y+h),(255,0,255),2)
             self.contours = self.contours + (gray[y:y+h,x:x+w],)
 
-
+        # TODO: encapsulate this in multiprocess
         for idx, c in enumerate(self.contours):
             # cv2.imshow("boundingRectangle_" + str(idx), c)
-            cv2.moveWindow("boundingRectangle_" + str(idx), 1400, (1000-50*idx))
+            # cv2.moveWindow("boundingRectangle_" + str(idx), 1400, (1000-50*idx))
             # TODO: make saving more elastic
             cv2.imwrite(os.path.join(outPath,"boundingRectangle_" + str(len(self.contours)-idx-1) + ".jpg"), c) # it was writing in reverse order
         # write original image with added contours to disk  
@@ -155,16 +172,30 @@ class TextExtractor():
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
 
+    # def saveCroppedLetter(self, c, outPath):
+    #     cv2.imshow("boundingRectangle_" + str(idx), c)
+    #     cv2.moveWindow("boundingRectangle_" + str(idx), 1400, (1000-50*idx))
+    #     cv2.imwrite(os.path.join(outPath,"boundingRectangle_" + str(len(self.contours)-idx-1) + ".jpg"), c) # it was writing in reverse order
+    
+
+def doOperation(pathToImage):
+    pathToSaveCh="/home/kkuczaj/Praca_inzynierska/VariousMLTforOCR/app_data/separated_chars"
+    print("Separating letters in " + str(pathToImage))
+    t = TextExtractor(pathToImage)
+    t.characterExtraction(pathToSaveCh)
+
 def main(singleWord, multipleWords):
+    print("OpenCV Version: {}". format(cv2. __version__))
     t = TextExtractor(singleWord)
-    mypath = "/home/kkuczaj/Praca_inzynierska/VariousMLTforOCR/app_data/separated_words"
-    t.contourExample(multipleWords, mypath, 100, 200, 40, 40) # original values 300, 300, 40, 40
-    onlyfiles = glob.glob(os.path.join(mypath,"*.jpg"))
-    # t.characterExtraction(mypath)
-    for c in onlyfiles:
-        print("Separating letters in " + str(c))
-        t.setPathToImage(str(os.path.abspath(c)))
-        t.characterExtraction("/home/kkuczaj/Praca_inzynierska/VariousMLTforOCR/app_data/separated_chars")
+    pathToSaveWords = "/home/kkuczaj/Praca_inzynierska/VariousMLTforOCR/app_data/separated_words"
+    pathToSaveChars=("/home/kkuczaj/Praca_inzynierska/VariousMLTforOCR/app_data/separated_chars")
+    t.contourExample(multipleWords, pathToSaveWords, 100, 200, 40, 40) # original values 300, 300, 40, 40
+    onlyfiles = glob.glob(os.path.join(pathToSaveWords,"*.jpg"))
+    # t.characterExtraction(pathToSaveWords)
+    multiprocessing.set_start_method('spawn')
+    pool = multiprocessing.Pool()
+    pool.map(doOperation, onlyfiles)
+    
     
 
 if __name__ == '__main__':
