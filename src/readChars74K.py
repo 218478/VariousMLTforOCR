@@ -39,7 +39,7 @@ class Reader_Chars74K:
                 filepaths[currentScannedClass] = filepathsForSpecificClass
         self.filepaths = filepaths
         self.createReadableLabels()
-    
+
     def createReadableLabels(self):
         """
         This function describes, and assigns the class to the number.
