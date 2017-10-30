@@ -149,18 +149,6 @@ class Reader_Chars74K:
         self.trainLabels = keras.utils.to_categorical(self.trainLabels, self.classNo)
         self.testLabels = keras.utils.to_categorical(self.testLabels, self.classNo)
 
-    def predict(self, image):
-        """
-        image is an opencv image. This function will resize it to the size, when it was trained
-
-        TODO: how to know the size when image is loaded
-        """
-        image = cv2.resize(image, (16,16), interpolation=cv2.INTER_AREA)
-        image = cv2.bitwise_not(image)
-        # cv2.imwrite("converted.jpg", image)
-        values = self.model.predict(image.reshape(1,16,16,1), verbose=1)
-        return values.argmax()
-
 def main(filepath):
     classNo = 62
     r = Reader_Chars74K(filepath, classNo)
@@ -190,8 +178,8 @@ def main(filepath):
 
     model = modelCNN(maxsize, classNo, "trained_model.h5")
     # model = modelMLP(maxsize, classNo)#, "trained_model.h5") it works but needs file to be imported
-    model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
-    model.saveKerasModel()
+    # model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
+    # model.saveKerasModel()
     values = model.predict(r.testSet[2040].reshape(16,16))
     print((values.argmax()))
     print((r.testLabels[2040].argmax()))

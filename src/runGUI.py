@@ -1,23 +1,22 @@
-# from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
-# from PyQt5.QtGui import QPixmap, QImage
-from PyQt4 import QtGui
-import argparse, sys, multiprocessing
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
+from PyQt5.QtGui import QPixmap, QImage
+import argparse, sys, multiprocessing, os
 
 # TODO: check the standard of the order of importing packages and own files
 from design import Ui_MainWindow
 from cnn import modelCNN
 from opencv import TextExtractor
+from readChars74K import Reader_Chars74K # TODO: hard-code classes
 
 class myGUI(QMainWindow):
-    def  __init__(self, pathToNNModels, pathToSeparatedChars):
+    def  __init__(self, pathToNNModels):
         super().__init__()
         self.pathToNNModels = pathToNNModels
-        self.pathToSeparatedChars = pathToSeparatedChars
         self.ui = Ui_MainWindow()
         self.setup()
         # TODO: think about making those paramters visible or modifiable
-        maxsize = (16, 16)
-        classNo = 62
+        self.maxsize = (16, 16)
+        self.classNo = 62
         self.show()
 
     def setup(self):
@@ -39,8 +38,15 @@ class myGUI(QMainWindow):
         self.textExtractor = TextExtractor(str(self.filename[0]))
         self.textExtractor.contourExample()
         self.textExtractor.characterExtraction()
-        if self.ui.comboBoxAlgorithms.currentIndex == 0:
+        print(self.ui.comboBoxAlgorithms.currentIndex())
+        if self.ui.comboBoxAlgorithms.currentIndex() == 0:
+            self.reader = Reader_Chars74K("temp_to_save_np_array.temp",self.classNo)
             self.model = modelCNN(maxsize, classNo, "trained_model.h5")
+            print("temp")
+            for word in self.textExtractor.characters:
+                for char in word:
+                    s = self.reader.readableLabels(self.model.predict(char))
+                    self.ui.textBrowser = s
             print("Convolutional Neural Network")
 
         if self.ui.comboBoxAlgorithms.currentIndex == 1:
@@ -62,17 +68,17 @@ class myGUI(QMainWindow):
             lambda: print(self.ui.comboBoxAlgorithms.currentIndex()))
 
 
-def main(pathToNNModels, pathToSeparatedChars):
+def main(pathToNNModels):
+    #os.environ.pop("QT_STYLE_OVERRIDE")
     app = QApplication(sys.argv)
-    m = myGUI(pathToNNModels, pathToSeparatedChars)
+    m = myGUI(pathToNNModels)
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("pathToNNModels", help="Directory to stored neural networks models")
-    parser.add_argument("pathToSeparatedChars", help="Directory to where separated characters will be stored")
-    parser.add_argument("pathToSeparatedWords", help="Directory to where separated words will be stored")
     parser.add_argument("pathToLogFileDir", help="Path to log file")
+    # TODO: logging
     args = parser.parse_args()
-    main(args.pathToNNModels, args.pathToSeparatedChars)
+    main(args.pathToNNModels)

@@ -2,6 +2,14 @@
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>550</width>
+    <height>550</height>
+   </rect>
+  </property>
   <property name="sizePolicy">
    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
     <horstretch>0</horstretch>
@@ -24,7 +32,7 @@
    <string>Various Machine Learning Techniques for OCR</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>30</x>
@@ -86,13 +94,13 @@
          <string>Camera</string>
         </property>
        </widget>
-       <widget class="QWidget" name="">
+       <widget class="QWidget" name="layoutWidget">
         <property name="geometry">
          <rect>
           <x>20</x>
           <y>20</y>
           <width>211</width>
-          <height>42</height>
+          <height>58</height>
          </rect>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout">
@@ -156,20 +164,14 @@
        <property name="title">
         <string>Recognized Text</string>
        </property>
-       <widget class="QTextBrowser" name="textBrowser">
+       <widget class="QTextEdit" name="textEdit">
         <property name="geometry">
          <rect>
           <x>10</x>
           <y>30</y>
-          <width>220</width>
-          <height>200</height>
+          <width>221</width>
+          <height>201</height>
          </rect>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>220</width>
-          <height>200</height>
-         </size>
         </property>
        </widget>
       </widget>
@@ -220,12 +222,6 @@
      </item>
     </layout>
    </widget>
-   <zorder>label</zorder>
-   <zorder>groupBoxLoadImage</zorder>
-   <zorder>groupBoxTextOCR</zorder>
-   <zorder>groupBoxController</zorder>
-   <zorder>groupBoxImageAfterOCR</zorder>
-   <zorder>groupBoxLoadImage</zorder>
   </widget>
   <widget class="QStatusBar" name="statusBar">
    <property name="layoutDirection">

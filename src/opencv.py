@@ -86,6 +86,7 @@ class TextExtractor():
             cv2.namedWindow(self.pathToImage, cv2.WINDOW_NORMAL) # lets you resize the window
 
             # TODO: remove printing when sure it's doing proper OCR
+            # TODO: add contoured model with those boxes, cause it looks nice
 
             # for row in img:
             #     for cell in row:
@@ -140,9 +141,10 @@ class TextExtractor():
 
 
             for idxChar, letter in enumerate(letters):
-                # cv2.imshow("cropped_" + str(idx), letter)
+                # cv2.imshow("cropped_" + str(idxChar), letter)
                 self.addChar(idxWord, idxChar, letter)
-                # cv2.moveWindow("cropped_" + str(idx), 30*(1+idx), 30*(1+idx))
+                # cv2.imwrite(os.path.join("/home/kkuczaj/Praca_inzynierska/build","cropped_") + str(idxChar) + ".jpg", letter)
+                # cv2.moveWindow("cropped_" + str(idxChar), 30*(1+idxChar), 30*(1+idxChar))
 
     # TODO: make tuning easier and add cropping
     def contourExample(self, maxH=100, maxW=200, minH=40, minW=40):
@@ -178,7 +180,8 @@ class TextExtractor():
 
         # TODO: encapsulate this in multiprocess
         for idx, c in enumerate(self.contours):
-            # cv2.imshow("boundingRectangle_" + str(idx), c)
+            # TODO: it stopped working when single image is provided
+            # cv2.imshow("boundingRectangl?e_" + str(idx), c)
             # cv2.moveWindow("boundingRectangle_" + str(idx), 1400, (1000-50*idx))
             self.addWord(idx, c)
 

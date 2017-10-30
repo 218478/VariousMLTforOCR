@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'MainWindow.ui'
+# Form implementation generated from reading ui file '/home/kkuczaj/Praca_inzynierska/VariousMLTforOCR/gui/MainWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.9
 #
@@ -98,7 +98,7 @@ class Ui_MainWindow(object):
         self.groupBoxLoadImage.raise_()
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusBar = QtWidgets.QStatusBar(MainWindow)
-        self.statusBar.setLayoutDirection(QtCore.Qt.RightToLeft)
+        self.statusBar.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.statusBar.setObjectName("statusBar")
         MainWindow.setStatusBar(self.statusBar)
 
