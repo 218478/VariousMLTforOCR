@@ -83,7 +83,7 @@ class TextExtractor():
             # imgCopy = pool.map(self.erodeImg, img, kernel)
             # imgCopy = cv2.erode(imgCopy, kernel)
             imgCopy = cv2.bitwise_not(imgCopy)
-            cv2.namedWindow(self.pathToImage, cv2.WINDOW_NORMAL) # lets you resize the window
+            # cv2.namedWindow(self.pathToImage, cv2.WINDOW_NORMAL) # lets you resize the window
 
             # TODO: remove printing when sure it's doing proper OCR
             # TODO: add contoured model with those boxes, cause it looks nice
@@ -136,7 +136,7 @@ class TextExtractor():
                     # print("koniec literki")
                     # print("szerokosc: %d" % (x2-x1))
 
-                    # cv2.rectangle(imgCopy, (x1,upperBorder),(x2,lowerBorder),150,1)
+                    cv2.rectangle(imgCopy, (x1,upperBorder),(x2,lowerBorder),150,1)
                     letters = letters + (imgCopy[upperBorder:lowerBorder, x1:x2],)
 
 
@@ -175,21 +175,23 @@ class TextExtractor():
                 continue
 
             # draw rectangle around contour on original image
-            cv2.rectangle(image,(x,y),(x+w,y+h),(255,0,255),2)
+            # cv2.rectangle(image,(x,y),(x+w,y+h),(255,0,255),2)
             self.contours = self.contours + (gray[y:y+h,x:x+w],)
 
         # TODO: encapsulate this in multiprocess
         for idx, c in enumerate(self.contours):
             # TODO: it stopped working when single image is provided
-            # cv2.imshow("boundingRectangl?e_" + str(idx), c)
+            # cv2.imshow("boundingRectangle_" + str(idx), c)
             # cv2.moveWindow("boundingRectangle_" + str(idx), 1400, (1000-50*idx))
             self.addWord(idx, c)
+        if (len(self.words) is 0):
+            self.addWord(0, gray)
 
 
 
 def main(singleWord, multipleWords):
     print("OpenCV Version: {}". format(cv2. __version__))
-    t = TextExtractor(multipleWords)
+    t = TextExtractor(singleWord)
     t.contourExample( 100, 200, 40, 40) # original values 300, 300, 40, 40
     t.characterExtraction()
     # t.convertOpenCVtoQImageFormat()

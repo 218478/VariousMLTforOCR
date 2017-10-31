@@ -1,5 +1,6 @@
-from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog
-from PyQt5.QtGui import QPixmap, QImage
+from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyleFactory
+from PyQt5.QtGui import QPixmap, QImage, QPalette, QColor
+from PyQt5.QtCore import Qt
 import argparse, sys, multiprocessing, os
 
 # TODO: check the standard of the order of importing packages and own files
@@ -17,36 +18,56 @@ class myGUI(QMainWindow):
         # TODO: think about making those paramters visible or modifiable
         self.maxsize = (16, 16)
         self.classNo = 62
+        self.filename = ""
         self.show()
 
     def setup(self):
         self.ui.setupUi(self)
         self.ui.pushButtonLoadFile.clicked.connect(self.openFileDialog)
+        self.ui.horizontalSliderMaxH.valueChanged.connect(self.doOCRwhenSliderUsed)
+        self.ui.horizontalSliderMinH.valueChanged.connect(self.doOCRwhenSliderUsed)
+        self.ui.horizontalSliderMaxW.valueChanged.connect(self.doOCRwhenSliderUsed)
+        self.ui.horizontalSliderMinW.valueChanged.connect(self.doOCRwhenSliderUsed)
         self.ui.statusBar.showMessage("by Kamil Kuczaj 2017")
         self.setupCamera()
         self.setupComboBox()
 
     def openFileDialog(self):
-        self.filename = QFileDialog.getOpenFileName(directory='../VariousMLTforOCR/datasets')
+        d = QFileDialog(parent=self)
+        d.setStyleSheet(self.styleSheet())
+        self.filename = d.getOpenFileName(directory='../VariousMLTforOCR/datasets', options=QFileDialog.DontUseNativeDialog)
         self.ui.labelImage.setScaledContents(True)
         self.ui.labelImage.setPixmap(QPixmap(self.filename[0]))
         self.doOCR()
+
+    def doOCRwhenSliderUsed(self):
+        if len(self.filename) != 0:
+            self.doOCR()
 
     def doOCR(self):
         # TODO: change prints to logging and enable it to print on console for debug
         print("Chosen file: " + str(self.filename[0]))
         self.textExtractor = TextExtractor(str(self.filename[0]))
-        self.textExtractor.contourExample()
+        self.textExtractor.contourExample(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
+                                          self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value())
         self.textExtractor.characterExtraction()
+        print("I read " + str(len(self.textExtractor.characters)) + " words")
+        for idx, word in enumerate(self.textExtractor.characters):
+            print("For word " + str(idx) + " extracted " + str(len(word)) + " chars")
         print(self.ui.comboBoxAlgorithms.currentIndex())
         if self.ui.comboBoxAlgorithms.currentIndex() == 0:
-            self.reader = Reader_Chars74K("temp_to_save_np_array.temp",self.classNo)
-            self.model = modelCNN(maxsize, classNo, "trained_model.h5")
+            self.reader = Reader_Chars74K()
+            self.reader.classNo = self.classNo
+            self.reader.createReadableLabels()
+            self.model = modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model.h5"))
             print("temp")
+            self.ui.textEdit.clear()
+            s = ""
             for word in self.textExtractor.characters:
                 for char in word:
-                    s = self.reader.readableLabels(self.model.predict(char))
-                    self.ui.textBrowser = s
+                    s += self.reader.readableLabels[self.model.predict(char)]
+                s += " "
+            self.ui.textEdit.append(s)
             print("Convolutional Neural Network")
 
         if self.ui.comboBoxAlgorithms.currentIndex == 1:
@@ -69,8 +90,8 @@ class myGUI(QMainWindow):
 
 
 def main(pathToNNModels):
-    #os.environ.pop("QT_STYLE_OVERRIDE")
     app = QApplication(sys.argv)
+    app.setStyle('Breeze')
     m = myGUI(pathToNNModels)
     sys.exit(app.exec_())
 

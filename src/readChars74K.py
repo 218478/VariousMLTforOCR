@@ -15,7 +15,7 @@ maxsize = (16, 16)
 
 
 class Reader_Chars74K:
-    def __init__(self, filepath, classNo):
+    def setFilepaths(self, filepath, classNo):
         """
         Reads Chars74K dataset and returns 2D array of filepaths. The first
         value is the class no (derived from the directory name) and the second
@@ -49,9 +49,9 @@ class Reader_Chars74K:
         for i in range(0,10):
             self.readableLabels[i] = str(i)
         for i in range(65,91):
-            self.readableLabels[i-55] = "capital_" + chr(i)
+            self.readableLabels[i-55] =  chr(i)
         for i in range(97,123):
-            self.readableLabels[i-61] = "small_" + chr(i)
+            self.readableLabels[i-61] =  chr(i)
 
     def getWhiteImageBlackBackground(self, image):
         """

@@ -66,7 +66,7 @@
         <property name="geometry">
          <rect>
           <x>130</x>
-          <y>110</y>
+          <y>90</y>
           <width>79</width>
           <height>24</height>
          </rect>
@@ -82,7 +82,7 @@
         <property name="geometry">
          <rect>
           <x>30</x>
-          <y>110</y>
+          <y>90</y>
           <width>79</width>
           <height>24</height>
          </rect>
@@ -118,6 +118,134 @@
           <widget class="QComboBox" name="comboBoxAlgorithms"/>
          </item>
         </layout>
+       </widget>
+       <widget class="QSlider" name="horizontalSliderMaxH">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>140</y>
+          <width>151</width>
+          <height>18</height>
+         </rect>
+        </property>
+        <property name="minimum">
+         <number>100</number>
+        </property>
+        <property name="maximum">
+         <number>400</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QSlider" name="horizontalSliderMinH">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>170</y>
+          <width>151</width>
+          <height>18</height>
+         </rect>
+        </property>
+        <property name="minimum">
+         <number>100</number>
+        </property>
+        <property name="maximum">
+         <number>400</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QSlider" name="horizontalSliderMaxW">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>200</y>
+          <width>151</width>
+          <height>18</height>
+         </rect>
+        </property>
+        <property name="minimum">
+         <number>10</number>
+        </property>
+        <property name="maximum">
+         <number>80</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QSlider" name="horizontalSliderMinW">
+        <property name="geometry">
+         <rect>
+          <x>0</x>
+          <y>220</y>
+          <width>151</width>
+          <height>18</height>
+         </rect>
+        </property>
+        <property name="minimum">
+         <number>10</number>
+        </property>
+        <property name="maximum">
+         <number>80</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+       <widget class="QLabel" name="labelMaxH">
+        <property name="geometry">
+         <rect>
+          <x>160</x>
+          <y>140</y>
+          <width>41</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>maxH</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="labelMinH">
+        <property name="geometry">
+         <rect>
+          <x>160</x>
+          <y>170</y>
+          <width>41</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>minH</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="labelMaxW">
+        <property name="geometry">
+         <rect>
+          <x>160</x>
+          <y>200</y>
+          <width>41</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>maxW</string>
+        </property>
+       </widget>
+       <widget class="QLabel" name="labelMinW">
+        <property name="geometry">
+         <rect>
+          <x>160</x>
+          <y>220</y>
+          <width>41</width>
+          <height>17</height>
+         </rect>
+        </property>
+        <property name="text">
+         <string>minW</string>
+        </property>
        </widget>
       </widget>
      </item>

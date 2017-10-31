@@ -43,12 +43,13 @@ add_custom_target(main ${PYTHON_EXEC} ${SOURCE_DIR}/main.py
                   ${CMAKE_BINARY_DIR})
 
 # GUI
+add_custom_target(ui_conversion ${PYUIC} ${GUI_DESIGN} > ${GUI_PYTHON})
+
 add_custom_target(app ${PYTHON_EXEC} ${SOURCE_DIR}/runGUI.py
                   ${NN_MODELS_DIR}
-                  ${CMAKE_BINARY_DIR})
-# add_custom_command(TARGET app
-#                    PRE_BUILD
-#                    COMMAND ${PYUIC} "${GUI_DESIGN} > ${GUI_PYTHON}")
+                  ${CMAKE_BINARY_DIR}
+                  DEPENDS ui_conversion)
+
 
 # UMLs for thesis
 add_custom_target(umls echo "-- Umls generated")
