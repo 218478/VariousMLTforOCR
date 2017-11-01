@@ -1,12 +1,12 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyleFactory
 from PyQt5.QtGui import QPixmap, QImage, QPalette, QColor
 from PyQt5.QtCore import Qt
-import argparse, sys, multiprocessing, os
+import argparse, sys, os
 
 # TODO: check the standard of the order of importing packages and own files
 from design import Ui_MainWindow
 from cnn import modelCNN
-from opencv import TextExtractor
+from textExtractor import TextExtractor
 from readChars74K import Reader_Chars74K # TODO: hard-code classes
 
 class myGUI(QMainWindow):
@@ -20,6 +20,18 @@ class myGUI(QMainWindow):
         self.classNo = 62
         self.filename = ""
         self.show()
+        self.center()
+
+    def center(self):
+        """
+        Thanks to https://stackoverflow.com/questions/20243637/pyqt4-center-window-on-active-screen
+        answered 27.11.13 14:17     accessed on 31.10.2017 23:12
+        """
+        frameGm = self.frameGeometry()
+        screen = QApplication.desktop().screenNumber(QApplication.desktop().cursor().pos())
+        centerPoint = QApplication.desktop().screenGeometry(screen).center()
+        frameGm.moveCenter(centerPoint)
+        self.move(frameGm.topLeft())
 
     def setup(self):
         self.ui.setupUi(self)
@@ -28,14 +40,12 @@ class myGUI(QMainWindow):
         self.ui.horizontalSliderMinH.valueChanged.connect(self.doOCRwhenSliderUsed)
         self.ui.horizontalSliderMaxW.valueChanged.connect(self.doOCRwhenSliderUsed)
         self.ui.horizontalSliderMinW.valueChanged.connect(self.doOCRwhenSliderUsed)
+        self.ui.pushButtonCamera.clicked.connect(self.setupCamera)
         self.ui.statusBar.showMessage("by Kamil Kuczaj 2017")
-        self.setupCamera()
         self.setupComboBox()
 
     def openFileDialog(self):
-        d = QFileDialog(parent=self)
-        d.setStyleSheet(self.styleSheet())
-        self.filename = d.getOpenFileName(directory='../VariousMLTforOCR/datasets', options=QFileDialog.DontUseNativeDialog)
+        self.filename = QFileDialog(parent=self).getOpenFileName(directory='../VariousMLTforOCR/testing/example_images', options=QFileDialog.DontUseNativeDialog)
         self.ui.labelImage.setScaledContents(True)
         self.ui.labelImage.setPixmap(QPixmap(self.filename[0]))
         self.doOCR()
@@ -76,8 +86,6 @@ class myGUI(QMainWindow):
         if self.ui.comboBoxAlgorithms.currentIndex == 2:
             print("k Nearest Neighbors")
 
-
-
     def setupCamera(self):
         print("TODO: implement camera functionality")
 
@@ -91,7 +99,6 @@ class myGUI(QMainWindow):
 
 def main(pathToNNModels):
     app = QApplication(sys.argv)
-    app.setStyle('Breeze')
     m = myGUI(pathToNNModels)
     sys.exit(app.exec_())
 

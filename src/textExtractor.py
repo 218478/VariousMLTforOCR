@@ -73,25 +73,29 @@ class TextExtractor():
             img = cv2.bitwise_not(img)
             imgCopy = cv2.bitwise_not(imgCopy)
             # img /= 32 it was not working on python3
-            for row in img:
-                for pixel in row:
-                    pixel /= 32
-            # img = np.divide(img,32) # divided to get data into [0,7]
+            # for row in img:
+            #     for pixel in row:
+            #         pixel /= 32
+            img = np.divide(img,32) # divided to get data into [0,7]
             kernel = np.ones((2,2),np.uint8)
 
             img = cv2.erode(img, kernel)
-            # imgCopy = pool.map(self.erodeImg, img, kernel)
-            # imgCopy = cv2.erode(imgCopy, kernel)
+            imgCopy = cv2.erode(imgCopy, kernel)
             imgCopy = cv2.bitwise_not(imgCopy)
             # cv2.namedWindow(self.pathToImage, cv2.WINDOW_NORMAL) # lets you resize the window
 
             # TODO: remove printing when sure it's doing proper OCR
             # TODO: add contoured model with those boxes, cause it looks nice
 
-            # for row in img:
-            #     for cell in row:
-            #         sys.stdout.write("%d" % cell)
-            #     sys.stdout.write("\n")
+            import sys # watchout!!! Lazy import
+            for row in img:
+                for cell in row:
+                    sys.stdout.write("%d" % cell)
+                sys.stdout.write("\n")
+
+            cv2.imshow("test", img)
+            cv2.waitKey()
+            cv2.destroyAllWindows()
 
             scanningLetter = False
             zeroResult = False
@@ -120,7 +124,7 @@ class TextExtractor():
             letters = () # tuple for storing recognized letters
             # detect breaks between letters
             for col in range(img.shape[1]):
-                # print(np.dot(np.ones((1 ,img.shape[0])),img[:,col]))
+                print(np.dot(np.ones((1 ,img.shape[0])),img[:,col]))
                 zeroResult = np.isclose(np.dot(np.ones((1 ,img.shape[0])),img[:,col]), 0)
                 if not zeroResult and not scanningLetter: # letter start
                     x1 = col
@@ -141,6 +145,7 @@ class TextExtractor():
 
 
             for idxChar, letter in enumerate(letters):
+                print("letter: " + str(idxChar))
                 # cv2.imshow("cropped_" + str(idxChar), letter)
                 self.addChar(idxWord, idxChar, letter)
                 # cv2.imwrite(os.path.join("/home/kkuczaj/Praca_inzynierska/build","cropped_") + str(idxChar) + ".jpg", letter)
@@ -155,9 +160,10 @@ class TextExtractor():
         answered May 9 '14 at 5:07 by anana
         accessed Oct 10 '17 at 18:46
         '''
-        image = cv2.imread(self.pathToImage)
-        gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY) # grayscale
-        _,thresh = cv2.threshold(gray,150,255,cv2.THRESH_BINARY_INV) # threshold
+        if not os.path.exists(self.pathToImage):
+            sys.exit("Bad image filepath provided. It does not exist" + self.pathToImage)
+        image = cv2.imread(self.pathToImage, flags=cv2.IMREAD_GRAYSCALE)
+        _,thresh = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV) # threshold
         kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
         dilated = cv2.dilate(thresh,kernel,iterations = 13) # dilate
         _, contours, hierarchy = cv2.findContours(dilated,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE) # get contours
@@ -185,7 +191,7 @@ class TextExtractor():
             # cv2.moveWindow("boundingRectangle_" + str(idx), 1400, (1000-50*idx))
             self.addWord(idx, c)
         if (len(self.words) is 0):
-            self.addWord(0, gray)
+            self.addWord(0, image)
 
 
 
