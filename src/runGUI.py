@@ -1,9 +1,8 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyleFactory
 from PyQt5.QtGui import QPixmap, QImage, QPalette, QColor
 from PyQt5.QtCore import Qt
-import argparse, sys, os
+import argparse, sys, os, cv2
 
-# TODO: check the standard of the order of importing packages and own files
 from design import Ui_MainWindow
 from cnn import modelCNN
 from textExtractor import TextExtractor
@@ -45,38 +44,50 @@ class myGUI(QMainWindow):
         self.setupComboBox()
 
     def openFileDialog(self):
-        self.filename = QFileDialog(parent=self).getOpenFileName(directory='../VariousMLTforOCR/testing/example_images', options=QFileDialog.DontUseNativeDialog)
+        self.filename = QFileDialog(parent=self).getOpenFileName(directory='../VariousMLTforOCR/testing/example_images/', options=QFileDialog.DontUseNativeDialog)
         self.ui.labelImage.setScaledContents(True)
         self.ui.labelImage.setPixmap(QPixmap(self.filename[0]))
         self.doOCR()
 
     def doOCRwhenSliderUsed(self):
+        print("implement this with a lag")
         if len(self.filename) != 0:
             self.doOCR()
 
+    def getTextFromModel(self, model):
+        s = ""
+        for word in self.tE.charactersFromWord:
+            for char in word:
+                s += self.reader.readableLabels[model.predict(char)]
+            s += " "
+        return s
+
+    def extractTextFromSelectedFile(self):
+        self.tE = TextExtractor(str(self.filename[0]))
+        self.tE.wordExtraction(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
+                               self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value())
+        self.tE.characterExtraction()
+        self.tE.reverseEverything()
+
+    def cvtCvMatToQImg(self, img):
+        """
+        Expects grayscale image
+        https://stackoverflow.com/questions/37284161/i-used-opencv-to-convert-a-picture-to-grayscale-how-to-display-the-picture-on-py
+        Answered by tfv on 17.05.2016 20:17          Accessed on 02.11.2017 20:02
+        """
+        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+        height, width = img.shape[:2]
+        return QImage(img, width, height, QImage.Format_RGB888)
+
     def doOCR(self):
-        # TODO: change prints to logging and enable it to print on console for debug
-        print("Chosen file: " + str(self.filename[0]))
-        self.textExtractor = TextExtractor(str(self.filename[0]))
-        self.textExtractor.contourExample(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
-                                          self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value())
-        self.textExtractor.characterExtraction()
-        print("I read " + str(len(self.textExtractor.characters)) + " words")
-        for idx, word in enumerate(self.textExtractor.characters):
-            print("For word " + str(idx) + " extracted " + str(len(word)) + " chars")
-        print(self.ui.comboBoxAlgorithms.currentIndex())
+        self.extractTextFromSelectedFile()
+        self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(self.cvtCvMatToQImg(self.tE.image).scaled(self.ui.labelImageAfterOCR.width(), self.ui.labelImageAfterOCR.height())))
         if self.ui.comboBoxAlgorithms.currentIndex() == 0:
             self.reader = Reader_Chars74K()
             self.reader.classNo = self.classNo
             self.reader.createReadableLabels()
-            self.model = modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model.h5"))
-            print("temp")
             self.ui.textEdit.clear()
-            s = ""
-            for word in self.textExtractor.characters:
-                for char in word:
-                    s += self.reader.readableLabels[self.model.predict(char)]
-                s += " "
+            s = self.getTextFromModel(modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model.h5")))
             self.ui.textEdit.append(s)
             print("Convolutional Neural Network")
 
@@ -93,8 +104,6 @@ class myGUI(QMainWindow):
         self.ui.comboBoxAlgorithms.addItem("Convolutional Neural Network")
         self.ui.comboBoxAlgorithms.addItem("Multilayer Perceptron Neural Network")
         self.ui.comboBoxAlgorithms.addItem("k Nearest Neighbors")
-        self.ui.comboBoxAlgorithms.currentIndexChanged.connect(
-            lambda: print(self.ui.comboBoxAlgorithms.currentIndex()))
 
 
 def main(pathToNNModels):

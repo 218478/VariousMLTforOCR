@@ -14,15 +14,14 @@ find_python_module(tensorflow REQUIRED)
 find_python_module(keras REQUIRED)
 find_python_module(cv2 REQUIRED)
 find_python_module(numpy REQUIRED)
-# Python modules required during build time
-find_python_module(imgaug REQUIRED)
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(DATASETS_DIR ${CMAKE_SOURCE_DIR}/datasets)
 set(EXAMPLE_IMAGES_DIR ${CMAKE_SOURCE_DIR}/testing/example_images)
 set(NN_MODELS_DIR ${CMAKE_SOURCE_DIR}/app_data/nn_models)
+set(UTILS_DIR ${CMAKE_SOURCE_DIR}/utils)
 
-# TODO: obsolete
+# TODO: obsolete need to upgrade
 add_custom_target(mnist_ocr ${PYTHON_EXEC} ${SOURCE_DIR}/readMNIST.py
                   ${DATASETS_DIR}/MNIST
                   ${CMAKE_BINARY_DIR})
@@ -46,3 +45,4 @@ add_custom_target(main_teach_nn ${PYTHON_EXEC} ${SOURCE_DIR}/main.py
 add_subdirectory(gui)
 add_subdirectory(uml)
 add_subdirectory(testing)
+add_subdirectory(utils)
