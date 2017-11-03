@@ -36,10 +36,10 @@ class myGUI(QMainWindow):
     def setup(self):
         self.ui.setupUi(self)
         self.ui.pushButtonLoadFile.clicked.connect(self.openFileDialog)
-        self.ui.horizontalSliderMaxH.valueChanged.connect(self.doOCRwhenSliderUsed)
-        self.ui.horizontalSliderMinH.valueChanged.connect(self.doOCRwhenSliderUsed)
-        self.ui.horizontalSliderMaxW.valueChanged.connect(self.doOCRwhenSliderUsed)
-        self.ui.horizontalSliderMinW.valueChanged.connect(self.doOCRwhenSliderUsed)
+        self.ui.horizontalSliderMaxH.sliderReleased.connect(self.doOCRwhenSliderUsed)
+        self.ui.horizontalSliderMinH.sliderReleased.connect(self.doOCRwhenSliderUsed)
+        self.ui.horizontalSliderMaxW.sliderReleased.connect(self.doOCRwhenSliderUsed)
+        self.ui.horizontalSliderMinW.sliderReleased.connect(self.doOCRwhenSliderUsed)
         self.ui.pushButtonCamera.clicked.connect(self.setupCamera)
         self.ui.statusBar.showMessage("by Kamil Kuczaj 2017")
         self.setupComboBox()
@@ -108,11 +108,8 @@ class myGUI(QMainWindow):
         # need to add 90 degrees to the angle
         if angle < -45:
             angle = -(90 + angle)
-
-        # otherwise, just take the inverse of the angle to make
-        # it positive
         else:
-            angle = -angle
+            angle = -angle # otherwise, just take the inverse of the angle to make it positive
 
         # rotate the image to deskew it
         (h, w) = image.shape[:2]

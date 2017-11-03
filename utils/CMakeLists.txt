@@ -1,5 +1,6 @@
 find_python_module(imgaug REQUIRED)
 find_python_module(PIL REQUIRED)
+find_python_module(joblib REQUIRED)
 set(UTILS_DIR ${CMAKE_SOURCE_DIR}/utils)
 set(OUTPUT_UTILS ${CMAKE_BINARY_DIR}/dataset)
 

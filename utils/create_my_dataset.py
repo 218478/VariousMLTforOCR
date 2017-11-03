@@ -3,6 +3,8 @@ import imgaug as ia
 from imgaug import augmenters as iaa
 import os, cv2, sys, time
 import numpy as np
+from joblib import Parallel, delayed
+import multiprocessing
 
 
 """
@@ -18,10 +20,14 @@ root
 """
 
 class DatasetCreator():
-    def __init__(self, height = 16, width = 16, classNo=62):
+    '''
+    Parallel generator of 62 classes - 10 digits and 26 of each capital and normal letters.
+    '''
+    def __init__(self, height = 16, width = 16, classNo=62, bckgColor = (255, 255, 255)):
         self.height = height
         self.width = width
         self.classNo = classNo
+        self._blank = self._create_blank(self.width, self.height, rgb_color=bckgColor)
         self.createReadableLabels()
 
     def _create_blank(self, width, height, rgb_color=(0, 0, 0)):
@@ -84,47 +90,46 @@ class DatasetCreator():
         ], random_order=True) # apply augmenters in random order
         return seq
 
+    def generateImagesForClass(self, c, rootPath, fontscale, countForClass, seq):
+        suffix = "%03d" % (c+1)
+        dir_name = os.path.join(rootPath, "Sample" + suffix)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+        for i in range(countForClass):
+            # 'images' should be either a 4D numpy array of shape (N, height, width, channels)
+            # or a list of 3D numpy arrays, each having shape (height, width, channels).
+            # Grayscale images must have shape (height, width, 1) each.
+            # All images must have numpy's dtype uint8. Values are expected to be in
+            # range 0-255.
+            images = self._putCvText(self.readableLabels[c], fontscale=fontscale, howManyInstances=countForClass)
+            images_aug = seq.augment_images(images)
+            for idx, img_aug in enumerate(images_aug):
+                filename = "image" + suffix + "%05d.png"% idx
+                cv2.imwrite(os.path.join(dir_name, filename),img_aug)
+        sys.stdout.write("-")
+        sys.stdout.flush()
 
     def generateDataset(self, rootPath, fontscale = 0.5, countForClass = 1016):
         seq = self.commonAugmentation()
         sys.stdout.write("[%s]" % (" " * self.classNo))
         sys.stdout.flush()
         sys.stdout.write("\b" * (self.classNo+1)) # return to start of line, after '['
-        for c in range(self.classNo):
-            suffix = "%03d" % (c+1)
-            dir_name = os.path.join(rootPath, "Sample" + suffix)
-            if not os.path.exists(dir_name):
-                os.makedirs(dir_name)
-            for i in range(countForClass):
-                # 'images' should be either a 4D numpy array of shape (N, height, width, channels)
-                # or a list of 3D numpy arrays, each having shape (height, width, channels).
-                # Grayscale images must have shape (height, width, 1) each.
-                # All images must have numpy's dtype uint8. Values are expected to be in
-                # range 0-255.
-                images = self._putCvText(self.readableLabels[c], fontscale=fontscale, howManyInstances=countForClass)
-                images_aug = seq.augment_images(images)
-                for idx, img_aug in enumerate(images_aug):
-                    filename = "image" + suffix + "%05d.png"% idx
-                    cv2.imwrite(os.path.join(dir_name, filename),img_aug)
-            sys.stdout.write("-")
-            sys.stdout.flush()
-
+        inputs = range(self.classNo)
+        num_cores = multiprocessing.cpu_count()
+        results = Parallel(n_jobs=num_cores)(delayed(self.generateImagesForClass)(i, rootPath, fontscale, countForClass, seq) for i in inputs)
         sys.stdout.write("\n")
 
-    def _putCvText(self, txt, fontscale, howManyInstances=1016, bckgColor = (255, 255, 255), fontColor = (0, 0, 0)):
-        image = self._create_blank(self.width, self.height, rgb_color=bckgColor)
+    def _putCvText(self, txt, fontscale, howManyInstances=1016, fontColor = (0, 0, 0)):
+        image = self._blank.copy()
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(image, str(txt), (int(self.height/4), int(self.width/5*4)), font, fontscale, fontColor)
-        images = np.zeros((howManyInstances,self.height, self.width, 3))
-        for i in range(howManyInstances): # TODO: I bet this can be nicely optimized
-            images[i] = image
-        return images
+        return [image]*howManyInstances
 
 def main():
-    start = time.clock()
+    start = time.time()
     d = DatasetCreator(height=16, width=16, classNo=62)
-    d.generateDataset("dataset",fontscale = 0.5, countForClass=10)
-    stop = time.clock()
+    d.generateDataset("dataset",fontscale = 0.5, countForClass=500)
+    stop = time.time()
     print("It took me %f seconds" % (stop-start))
 if __name__ == '__main__':
     main()
