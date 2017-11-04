@@ -1,10 +1,8 @@
-from PIL import Image, ImageDraw, ImageFont
+import numpy as np
 import imgaug as ia
 from imgaug import augmenters as iaa
-import os, cv2, sys, time
-import numpy as np
+import os, cv2, sys, time, multiprocessing
 from joblib import Parallel, delayed
-import multiprocessing
 
 
 """
@@ -61,20 +59,19 @@ class DatasetCreator():
         '''
         ia.seed(1)
         seq = iaa.Sequential([
-            iaa.Crop(percent=(0, 0.1)), # random crops
             # Small gaussian blur with random sigma between 0 and 0.5.
             # But we only blur about 50% of all images.
-            iaa.Sometimes(0.5,
+            iaa.Sometimes(0.2,
                 iaa.GaussianBlur(sigma=(0, 0.3))
             ),
             # Strengthen or weaken the contrast in each image.
-            iaa.ContrastNormalization((0.875, 1.125)),
+            iaa.ContrastNormalization((0.92, 1.08)),
             # Add gaussian noise.
             # For 50% of all images, we sample the noise once per pixel.
             # For the other 50% of all images, we sample the noise per pixel AND
             # channel. This can change the color (not only brightness) of the
             # pixels.
-            iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.05*255), per_channel=0.5),
+            iaa.AdditiveGaussianNoise(loc=0, scale=(0.0, 0.01*255), per_channel=0.1),
             # Make some images brighter and some darker.
             # In 20% of all cases, we sample the multiplier once per channel,
             # which can end up changing the color of the images.
@@ -82,10 +79,11 @@ class DatasetCreator():
             # Apply affine transformations to each image.
             # Scale/zoom them, translate/move them, rotate them and shear them.
             iaa.Affine(
-                scale={"x": (0.8, 1.2), "y": (0.8, 1.2)},
-                translate_percent={"x": (-0.2, 0.2), "y": (-0.2, 0.2)},
-                rotate=(-2.5, 2.5),
-                shear=(-8, 8)
+                scale={"x": (0.95, 1.05), "y": (0.95, 1.05)},
+                translate_percent={"x": (-0.15, 0.15), "y": (-0.15, 0.15)},
+                order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
+                rotate=(-1.5, 1.5),
+                cval=255
             )
         ], random_order=True) # apply augmenters in random order
         return seq
@@ -120,6 +118,9 @@ class DatasetCreator():
         sys.stdout.write("\n")
 
     def _putCvText(self, txt, fontscale, howManyInstances=1016, fontColor = (0, 0, 0)):
+        """
+        This function can be randomized to choose different font every time ;)
+        """
         image = self._blank.copy()
         font = cv2.FONT_HERSHEY_SIMPLEX
         cv2.putText(image, str(txt), (int(self.height/4), int(self.width/5*4)), font, fontscale, fontColor)
@@ -128,7 +129,7 @@ class DatasetCreator():
 def main():
     start = time.time()
     d = DatasetCreator(height=16, width=16, classNo=62)
-    d.generateDataset("dataset",fontscale = 0.5, countForClass=500)
+    d.generateDataset("dataset",fontscale = 0.5, countForClass=100)
     stop = time.time()
     print("It took me %f seconds" % (stop-start))
 if __name__ == '__main__':

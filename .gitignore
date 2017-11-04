@@ -39,3 +39,4 @@ Thumbs.db
 datasets/*
 .vscode
 *.pyc
+.cache/

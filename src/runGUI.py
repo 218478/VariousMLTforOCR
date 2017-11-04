@@ -12,15 +12,20 @@ from readChars74K import Reader_Chars74K # TODO: hard-code classes
 class myGUI(QMainWindow):
     def  __init__(self, pathToNNModels):
         super().__init__()
-        self.pathToNNModels = pathToNNModels
         self.ui = Ui_MainWindow()
+        self.setupParameters(pathToNNModels=pathToNNModels)
         self.setup()
-        # TODO: think about making those paramters visible or modifiable
+        self.showFullScreen()
+        self.center() #windowed mode
+
+    def setupParameters(self, pathToNNModels, imgWidth=16, imgHeight=16, classNo=62):
+        """
+        TODO: think about making those paramters visible or modifiable
+        """
+        self.pathToNNModels = pathToNNModels
         self.maxsize = (16, 16)
         self.classNo = 62
         self.filename = ""
-        self.show()
-        self.center()
 
     def center(self):
         """
@@ -33,25 +38,45 @@ class myGUI(QMainWindow):
         frameGm.moveCenter(centerPoint)
         self.move(frameGm.topLeft())
 
-    def setup(self):
-        self.ui.setupUi(self)
+    # TODO: add drag'n'drop functionality
+    def dragEnterEvent(self, e):
+        if e.mimeData().hasFormat('image/svg+jpg+png'):
+            e.accept()
+        else:
+            e.ignore()
+
+    def dropEvent(self, e):
+        print(e.mimeData().text())
+
+    def setupEvents(self):
         self.ui.pushButtonLoadFile.clicked.connect(self.openFileDialog)
         self.ui.horizontalSliderMaxH.sliderReleased.connect(self.doOCRwhenSliderUsed)
         self.ui.horizontalSliderMinH.sliderReleased.connect(self.doOCRwhenSliderUsed)
         self.ui.horizontalSliderMaxW.sliderReleased.connect(self.doOCRwhenSliderUsed)
         self.ui.horizontalSliderMinW.sliderReleased.connect(self.doOCRwhenSliderUsed)
         self.ui.pushButtonCamera.clicked.connect(self.setupCamera)
+
+    def setup(self):
+        self.ui.setupUi(self)
+        self.setupEvents()
         self.ui.statusBar.showMessage("by Kamil Kuczaj 2017")
+        self.ui.labelImage.setScaledContents(True)
+        self.ui.labelImageAfterOCR.setScaledContents(True)
         self.setupComboBox()
 
     def openFileDialog(self):
-        self.filename = QFileDialog(parent=self).getOpenFileName(directory='../VariousMLTforOCR/testing/example_images/', options=QFileDialog.DontUseNativeDialog)
-        self.ui.labelImage.setScaledContents(True)
-        self.ui.labelImage.setPixmap(QPixmap(self.filename[0]))
-        self.doOCR()
+        self.filename = QFileDialog(parent=self).getOpenFileName(options=QFileDialog.DontUseNativeDialog)[0] # directory='../VariousMLTforOCR/testing/example_images/'
+        if len(self.filename) != 0:
+            self.ui.labelImage.setPixmap(QPixmap(self.filename))
+            self.ui.labelImage.setMaximumHeight(int(self.ui.centralwidget.height()/2))
+            self.ui.labelImage.setMaximumWidth(int(self.ui.centralwidget.width()/2))
+            self.doOCR()
 
     def doOCRwhenSliderUsed(self):
-        print("implement this with a lag")
+        self.ui.lcdmaxH.display(str(self.ui.horizontalSliderMaxH.value))
+        self.ui.lcdminH.display(str(self.ui.horizontalSliderMinH.value))
+        self.ui.lcdminW.display(str(self.ui.horizontalSliderMaxW.value))
+        self.ui.lcdminW.display(str(self.ui.horizontalSliderMinW.value))
         if len(self.filename) != 0:
             self.doOCR()
 
@@ -64,7 +89,7 @@ class myGUI(QMainWindow):
         return s
 
     def extractTextFromSelectedFile(self):
-        self.tE = TextExtractor(str(self.filename[0]))
+        self.tE = TextExtractor(str(self.filename))
         self.tE.wordExtraction(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
                                self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value())
         self.tE.characterExtraction()
@@ -85,27 +110,18 @@ class myGUI(QMainWindow):
         https://www.pyimagesearch.com/2017/02/20/text-skew-correction-opencv-python/
         """
         if len(image.shape) > 2:
-            gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-            gray = cv2.bitwise_not(gray)
+            gray = cv2.bitwise_not(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
         else:
             gray = cv2.bitwise_not(image)
+        thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 
-        # threshold the image, setting all foreground pixels to
-        # 255 and all background pixels to 0
-        thresh = cv2.threshold(gray, 0, 255,
-            cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
-
-        # grab the (x, y) coordinates of all pixel values that
-        # are greater than zero, then use these coordinates to
-        # compute a rotated bounding box that contains all
-        # coordinates
+        # grab the (x, y) coordinates of all pixel values that are greater than zero, then use these coordinates to
+        # compute a rotated bounding box that contains all coordinates
         coords = np.column_stack(np.where(thresh > 0))
         angle = cv2.minAreaRect(coords)[-1]
 
-        # the `cv2.minAreaRect` function returns values in the
-        # range [-90, 0); as the rectangle rotates clockwise the
-        # returned angle trends to 0 -- in this special case we
-        # need to add 90 degrees to the angle
+        # the `cv2.minAreaRect` function returns values in the range [-90, 0); as the rectangle rotates clockwise the
+        # returned angle trends to 0 -- in this special case we need to add 90 degrees to the angle
         if angle < -45:
             angle = -(90 + angle)
         else:
@@ -115,8 +131,7 @@ class myGUI(QMainWindow):
         (h, w) = image.shape[:2]
         center = (w // 2, h // 2)
         M = cv2.getRotationMatrix2D(center, angle, 1.0)
-        rotated = cv2.warpAffine(image, M, (w, h),
-            flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+        rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
         return rotated
 
 
@@ -129,7 +144,7 @@ class myGUI(QMainWindow):
             self.reader.classNo = self.classNo
             self.reader.createReadableLabels()
             self.ui.textEdit.clear()
-            s = self.getTextFromModel(modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model.h5")))
+            s = self.getTextFromModel(modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model_for_my_dataset4.h5")))
             self.ui.textEdit.append(s)
             print("Convolutional Neural Network")
 

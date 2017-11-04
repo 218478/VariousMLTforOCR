@@ -16,5 +16,5 @@ class myNN:
         image = cv2.resize(image, (16,16), interpolation=cv2.INTER_AREA)
         image = cv2.bitwise_not(image)
         # cv2.imwrite("converted.jpg", image)
-        values = self.model.predict(image.reshape(1,16,16,1), verbose=1)
+        values = self.model.predict(image.reshape(1,16,16,1), verbose=False)
         return values.argmax()

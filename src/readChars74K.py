@@ -5,15 +5,15 @@ from cnn import modelCNN
 import numpy as np
 import argparse, logging, os, sys, math, json, cv2
 from PIL import Image, ImageOps
-
+import cv2
 
 # CONSTANTS
 batch_size = 128
-epochs = 2
+epochs = 20
 
 maxsize = (16, 16)
 
-
+# TODO: cv2 migration???
 class Reader_Chars74K:
     def setFilepaths(self, filepath, classNo):
         """
@@ -31,7 +31,6 @@ class Reader_Chars74K:
             print(((len(path) - 1) * '---', os.path.basename(root)))
             filepathsForSpecificClass = []
             for file in files:
-                # print(len(path) * '---', file)
                 file = os.path.join(root, file)
                 filepathsForSpecificClass.append(file)
             if len(filepathsForSpecificClass) is not 0:
@@ -83,9 +82,6 @@ class Reader_Chars74K:
         print(("I have %d classes" % self.classNo))
 
         toolbar_width = self.classNo - 1
-        sys.stdout.write("[%s]" % (" " * toolbar_width))
-        sys.stdout.flush()
-        sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
         self.trainCountPerClass = np.ceil(counts*trainSetProportion).astype(int)
         self.testCountPerClass = (counts - self.trainCountPerClass).astype(int)
 
@@ -93,25 +89,46 @@ class Reader_Chars74K:
         self.trainLabels = np.empty((sum(self.trainCountPerClass)[0]))
         self.testSet = np.empty((sum(self.testCountPerClass)[0],maxsize[0],maxsize[1]))
         self.testLabels = np.empty((sum(self.testCountPerClass)[0]))
+        print(("Shape of trainDataset before reading: " + str(self.trainSet.shape)))
+        print(("Shape of testDataset before reading: " + str(self.testSet.shape)))
+        sys.stdout.write("[%s]" % (" " * toolbar_width))
+        sys.stdout.flush()
+        sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
         for imgClass in range(0, self.classNo-1):
             idx = 0
             for filepath in self.filepaths[imgClass]:
-                image = Image.open(filepath, mode="r")
-                image.thumbnail(maxsize, Image.ANTIALIAS)
-                image = self.getWhiteImageBlackBackground(image) # negates
+                image = Image.open(filepath, mode="r").convert('LA')
+                image = cv2.imread(filepath)
+                # image.thumbnail(maxsize, Image.ANTIALIAS)
+                # image = self.getWhiteImageBlackBackground(image) # negates
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+                # cv2.imshow("not negated", image)
+                # self.printImageArray(image)
+                # print("\n")
+                _,image = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV)
+                # cv2.imshow("negated", image)
+                image = np.array(image)
+                # self.printImageArray(image)
+                # cv2.waitKey()
+                # cv2.destroyAllWindows()
+                # print(image.shape)
+                # exit()
                 if idx < self.trainCountPerClass[imgClass]:
-                    self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx] = np.array(image)
+                    # print(self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx].shape)
+                    # print(image.shape)
+                    self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx] = image
+                    # print(self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx])
                     self.trainLabels[imgClass*self.trainCountPerClass[imgClass]+idx] = imgClass
                 else:
-                    self.testSet[imgClass*self.testCountPerClass[imgClass] + idx-self.trainCountPerClass[imgClass]] = np.array(image)
+                    self.testSet[imgClass*self.testCountPerClass[imgClass] + idx-self.trainCountPerClass[imgClass]] = image
                     self.testLabels[imgClass*self.testCountPerClass[imgClass] + idx-self.trainCountPerClass[imgClass]] = imgClass
                 idx += 1
             sys.stdout.write("-")
             sys.stdout.flush()
 
         sys.stdout.write("\n")
-        print(("Length of read trainDataset: " + str(self.trainSet.shape)))
-        print(("Length of read testDataset: " + str(self.testSet.shape)))
+        print(("Shape of read trainDataset: " + str(self.trainSet.shape)))
+        print(("Shape of read testDataset: " + str(self.testSet.shape)))
 
     def saveArrayToFile(self, outfile):
         for_saving = np.array((self.trainLabels, self.trainSet, self.testLabels, self.testSet))
@@ -136,11 +153,11 @@ class Reader_Chars74K:
             self.trainSet = self.trainSet.reshape(self.trainSet.shape[0], img_rows, img_cols, 1)
             self.testSet = self.testSet.reshape(self.testSet.shape[0], img_rows, img_cols, 1)
 
-        print(("Shape after reshape: " + str(self.trainSet.shape[0])))
+        # print(("Shape after reshape: " + str(self.trainSet.shape[0])))
         self.trainSet = self.trainSet.astype('float32')
         self.testSet = self.testSet.astype('float32')
-        self.trainSet /= 255
-        self.testSet /= 255
+        self.trainSet /= 255.0 # this was 255.0
+        self.testSet /= 255.0 # this was 255.0
         print(('self.trainSet shape:', self.trainSet.shape))
         print((self.trainSet.shape[0], 'train samples'))
         print(('self.testSet shape:', self.testSet.shape))
@@ -149,23 +166,30 @@ class Reader_Chars74K:
         self.trainLabels = keras.utils.to_categorical(self.trainLabels, self.classNo)
         self.testLabels = keras.utils.to_categorical(self.testLabels, self.classNo)
 
+    def printImageArray(self, img):
+        for row in img:
+            for cell in row:
+                sys.stdout.write("%d " % cell)
+            sys.stdout.write("\n")
+
 def main(filepath):
     classNo = 62
-    r = Reader_Chars74K(filepath, classNo)
-    # r.loadImagesIntoMemory(0.8, maxsize)
-    outfile = "temp_to_save_np_array.temp"
-    # r.saveArrayToFile(outfile)
+    r = Reader_Chars74K()
+    r.setFilepaths(filepath, classNo)
+    r.loadImagesIntoMemory(0.9, maxsize)
+    outfile = "temp_to_save_np_array_for_my_dataset.temp"
+    r.saveArrayToFile(outfile)
     # exit()
-    r.loadArraysFromFile(outfile)
+    # r.loadArraysFromFile(outfile)
     r.reshapeData(maxsize)
 
-    # temp1 = r.testSet[2040]/32
+    # temp1 = r.testSet[200]
     # for row in temp1:
     #     for cell in row:
     #         sys.stdout.write("%d " % cell)
     #     sys.stdout.write("\n")
-    # print(r.testLabels[2040])
-
+    # print(r.testLabels[200])
+    # exit()
     # temp2 = r.testSet[4816]/32
     # for row in temp2:
     #     for cell in row:
@@ -176,17 +200,15 @@ def main(filepath):
     #     sys.stdout.write("\n")
     # print(r.testLabels[4816])
 
-    model = modelCNN(maxsize, classNo, "trained_model.h5")
+    model = modelCNN(maxsize, classNo)#,"trained_model_for_my_dataset.h5")
     # model = modelMLP(maxsize, classNo)#, "trained_model.h5") it works but needs file to be imported
-    # model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
-    # model.saveKerasModel()
+    model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
+    model.saveKerasModel("trained_model_for_my_dataset4.h5")
     values = model.predict(r.testSet[2040].reshape(16,16))
+    print(values)
     print((values.argmax()))
     print((r.testLabels[2040].argmax()))
 
-    # values = model.predict(cv2.image.testSet[4816].reshape(16,16))
-    # print(values.argmax())
-    # print(r.testLabels[4836].argmax())
     exit()
 
 if __name__ == '__main__':
