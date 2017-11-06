@@ -2,15 +2,27 @@ import numpy as np
 import cv2, os, argparse, logging, sys
 
 class TextExtractor():
-    def __init__(self, pathToImage, grayValue = 150, boxThickness = 5):
+    def __init__(self, grayValue = 150, boxThickness = 5):
+        self.grayValue = grayValue
+        self.boxThickness = boxThickness
+        self.initializeWordsAndCharsContainers()
+
+    def initializeWordsAndCharsContainers(self):
+        self.words = []
+        self.charactersFromWord = []
+
+    def readFromImage(self, img):
+        if len(img.shape) > 2:
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        self.image = img
+        self.initializeWordsAndCharsContainers()
+
+    def readFromFilename(self, pathToImage):
         if not os.path.exists(pathToImage):
             sys.exit("Bad filename provide. File: " + str(pathToImage) + " does not exist!")
         self.pathToImage = pathToImage
-        self.grayValue = grayValue
-        self.boxThickness = boxThickness
         self.image = cv2.imread(self.pathToImage, flags=cv2.IMREAD_GRAYSCALE)
-        self.words = []
-        self.charactersFromWord = []
+        self.initializeWordsAndCharsContainers()
 
     def reverseEverything(self):
         self.charactersFromWord = self.charactersFromWord[::-1]

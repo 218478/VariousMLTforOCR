@@ -3,6 +3,8 @@ from PyQt5.QtGui import QPixmap, QImage, QPalette, QColor
 from PyQt5.QtCore import Qt
 import argparse, sys, os, cv2
 import numpy as np
+from tesserocr import PyTessBaseAPI
+import tesserocr
 
 from design import Ui_MainWindow
 from cnn import modelCNN
@@ -15,8 +17,7 @@ class myGUI(QMainWindow):
         self.ui = Ui_MainWindow()
         self.setupParameters(pathToNNModels=pathToNNModels)
         self.setup()
-        self.showFullScreen()
-        self.center() #windowed mode
+        self.showMaximized()
 
     def setupParameters(self, pathToNNModels, imgWidth=16, imgHeight=16, classNo=62):
         """
@@ -26,17 +27,8 @@ class myGUI(QMainWindow):
         self.maxsize = (16, 16)
         self.classNo = 62
         self.filename = ""
-
-    def center(self):
-        """
-        Thanks to https://stackoverflow.com/questions/20243637/pyqt4-center-window-on-active-screen
-        answered 27.11.13 14:17     accessed on 31.10.2017 23:12
-        """
-        frameGm = self.frameGeometry()
-        screen = QApplication.desktop().screenNumber(QApplication.desktop().cursor().pos())
-        centerPoint = QApplication.desktop().screenGeometry(screen).center()
-        frameGm.moveCenter(centerPoint)
-        self.move(frameGm.topLeft())
+        self.tE = TextExtractor()
+        self.modelCNN = modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model_for_my_dataset5.h5"))
 
     # TODO: add drag'n'drop functionality
     def dragEnterEvent(self, e):
@@ -55,6 +47,15 @@ class myGUI(QMainWindow):
         self.ui.horizontalSliderMaxW.sliderReleased.connect(self.doOCRwhenSliderUsed)
         self.ui.horizontalSliderMinW.sliderReleased.connect(self.doOCRwhenSliderUsed)
         self.ui.pushButtonCamera.clicked.connect(self.setupCamera)
+
+    def setupCamera(self):
+        print("TODO: implement camera functionality")
+
+    def setupComboBox(self):
+        self.ui.comboBoxAlgorithms.addItem("Convolutional Neural Network")
+        self.ui.comboBoxAlgorithms.addItem("Multilayer Perceptron Neural Network")
+        self.ui.comboBoxAlgorithms.addItem("k Nearest Neighbors")
+        self.ui.comboBoxAlgorithms.addItem("Tesseract")
 
     def setup(self):
         self.ui.setupUi(self)
@@ -89,7 +90,6 @@ class myGUI(QMainWindow):
         return s
 
     def extractTextFromSelectedFile(self):
-        self.tE = TextExtractor(str(self.filename))
         self.tE.wordExtraction(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
                                self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value())
         self.tE.characterExtraction()
@@ -134,33 +134,32 @@ class myGUI(QMainWindow):
         rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
         return rotated
 
+    def outputText(self, s):
+        self.ui.textEdit.clear()
+        self.ui.textEdit.append(s)
 
     def doOCR(self):
+        image = cv2.imread(self.filename)
+        self.tE.readFromImage(self.takeCareOfImageRotation(image))
         self.extractTextFromSelectedFile()
-        self.tE.image = self.takeCareOfImageRotation(self.tE.image)
         self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(self.cvtCvMatToQImg(self.tE.image).scaled(self.ui.labelImageAfterOCR.width(), self.ui.labelImageAfterOCR.height())))
         if self.ui.comboBoxAlgorithms.currentIndex() == 0:
             self.reader = Reader_Chars74K()
             self.reader.classNo = self.classNo
             self.reader.createReadableLabels()
-            self.ui.textEdit.clear()
-            s = self.getTextFromModel(modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model_for_my_dataset4.h5")))
-            self.ui.textEdit.append(s)
+            self.outputText(self.getTextFromModel(self.modelCNN))
             print("Convolutional Neural Network")
 
-        if self.ui.comboBoxAlgorithms.currentIndex == 1:
+        if self.ui.comboBoxAlgorithms.currentIndex() == 1:
             print("Multilayer Perceptron Neural Network")
 
-        if self.ui.comboBoxAlgorithms.currentIndex == 2:
+        if self.ui.comboBoxAlgorithms.currentIndex() == 2:
             print("k Nearest Neighbors")
 
-    def setupCamera(self):
-        print("TODO: implement camera functionality")
-
-    def setupComboBox(self):
-        self.ui.comboBoxAlgorithms.addItem("Convolutional Neural Network")
-        self.ui.comboBoxAlgorithms.addItem("Multilayer Perceptron Neural Network")
-        self.ui.comboBoxAlgorithms.addItem("k Nearest Neighbors")
+        if self.ui.comboBoxAlgorithms.currentIndex() == 3:
+            from PIL import Image
+            img = cv2.cvtColor(self.takeCareOfImageRotation(image), cv2.COLOR_BGR2RGB)
+            self.outputText(tesserocr.image_to_text(Image.fromarray(img)))
 
 
 def main(pathToNNModels):

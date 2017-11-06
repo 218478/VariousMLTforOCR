@@ -7,13 +7,8 @@ import argparse, logging, os, sys, math, json, cv2
 from PIL import Image, ImageOps
 import cv2
 
-# CONSTANTS
-batch_size = 128
-epochs = 20
 
-maxsize = (16, 16)
-
-# TODO: cv2 migration???
+# TODO: making it a general reader??
 class Reader_Chars74K:
     def setFilepaths(self, filepath, classNo):
         """
@@ -173,7 +168,12 @@ class Reader_Chars74K:
             sys.stdout.write("\n")
 
 def main(filepath):
+    # CONSTANTS
+    batch_size = 256
+    epochs = 6
+    maxsize = (16, 16)
     classNo = 62
+
     r = Reader_Chars74K()
     r.setFilepaths(filepath, classNo)
     r.loadImagesIntoMemory(0.9, maxsize)
@@ -203,13 +203,11 @@ def main(filepath):
     model = modelCNN(maxsize, classNo)#,"trained_model_for_my_dataset.h5")
     # model = modelMLP(maxsize, classNo)#, "trained_model.h5") it works but needs file to be imported
     model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
-    model.saveKerasModel("trained_model_for_my_dataset4.h5")
+    model.saveKerasModel("trained_model_for_my_dataset5.h5")
     values = model.predict(r.testSet[2040].reshape(16,16))
     print(values)
     print((values.argmax()))
     print((r.testLabels[2040].argmax()))
-
-    exit()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

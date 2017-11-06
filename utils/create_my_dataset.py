@@ -80,7 +80,7 @@ class DatasetCreator():
             # Scale/zoom them, translate/move them, rotate them and shear them.
             iaa.Affine(
                 scale={"x": (0.95, 1.05), "y": (0.95, 1.05)},
-                translate_percent={"x": (-0.15, 0.15), "y": (-0.15, 0.15)},
+                translate_percent={"x": (-0.05, 0.05), "y": (-0.05, 0.05)},
                 order=[0, 1], # use nearest neighbour or bilinear interpolation (fast)
                 rotate=(-1.5, 1.5),
                 cval=255
@@ -99,11 +99,17 @@ class DatasetCreator():
             # Grayscale images must have shape (height, width, 1) each.
             # All images must have numpy's dtype uint8. Values are expected to be in
             # range 0-255.
-            images = self._putCvText(self.readableLabels[c], fontscale=fontscale, howManyInstances=countForClass)
-            images_aug = seq.augment_images(images)
-            for idx, img_aug in enumerate(images_aug):
-                filename = "image" + suffix + "%05d.png"% idx
-                cv2.imwrite(os.path.join(dir_name, filename),img_aug)
+            fonts = [cv2.FONT_HERSHEY_SIMPLEX,
+                     cv2.FONT_HERSHEY_DUPLEX,
+                     cv2.FONT_HERSHEY_COMPLEX,
+                     cv2.FONT_HERSHEY_TRIPLEX,
+                     cv2.FONT_HERSHEY_COMPLEX_SMALL]
+            for j, font in enumerate(fonts):
+                images = self._putCvText(self.readableLabels[c], font=font, fontscale=fontscale, howManyInstances=countForClass)
+                images_aug = seq.augment_images(images)
+                for idx, img_aug in enumerate(images_aug):
+                    filename = "image" + suffix + "%05d.png"% (idx+j*countForClass)
+                    cv2.imwrite(os.path.join(dir_name, filename),img_aug)
         sys.stdout.write("-")
         sys.stdout.flush()
 
@@ -117,19 +123,32 @@ class DatasetCreator():
         results = Parallel(n_jobs=num_cores)(delayed(self.generateImagesForClass)(i, rootPath, fontscale, countForClass, seq) for i in inputs)
         sys.stdout.write("\n")
 
-    def _putCvText(self, txt, fontscale, howManyInstances=1016, fontColor = (0, 0, 0)):
+    def _putCvText(self, text, font, fontscale, howManyInstances=1016, fontColor = (0, 0, 0)):
         """
         This function can be randomized to choose different font every time ;)
+
+        Centering of the text thanks to https://gist.github.com/xcsrz/8938a5d4a47976c745407fe2788c813a
+        accessed on 05.11.2017 23:43        posted on 08.03.2017
         """
-        image = self._blank.copy()
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        cv2.putText(image, str(txt), (int(self.height/4), int(self.width/5*4)), font, fontscale, fontColor)
-        return [image]*howManyInstances
+        img = np.full((128,128), 255, np.uint8)
+        fontscale=4
+        textsize = cv2.getTextSize(text, font, fontscale,2)[0]
+
+        # get coords based on boundary
+        textX = int((img.shape[1] - textsize[0]) / 2)
+        textY = int((img.shape[0] + textsize[1]) / 2)
+
+        # add text centered on image
+        cv2.putText(img, str(text), (textX, textY ), font, fontscale, fontColor, thickness=2)
+        res = cv2.resize(img,(16,16), interpolation = cv2.INTER_AREA)
+        _,res = cv2.threshold(res,200,255,cv2.THRESH_BINARY)
+
+        return [res]*howManyInstances
 
 def main():
     start = time.time()
     d = DatasetCreator(height=16, width=16, classNo=62)
-    d.generateDataset("dataset",fontscale = 0.5, countForClass=100)
+    d.generateDataset("dataset5",fontscale = 0.5, countForClass=200)
     stop = time.time()
     print("It took me %f seconds" % (stop-start))
 if __name__ == '__main__':
