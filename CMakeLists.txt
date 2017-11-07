@@ -9,6 +9,7 @@ include(GNUInstallDirs)
 include(find_python_module.cmake)
 
 # Python modules
+# TODO: convert it to requirements.txt list
 find_python_module(PyQt5 REQUIRED)
 find_python_module(tensorflow REQUIRED)
 find_python_module(keras REQUIRED)
@@ -28,7 +29,7 @@ add_custom_target(mnist_ocr ${PYTHON_EXEC} ${SOURCE_DIR}/readMNIST.py
 
 # reading Chars74K database
 add_custom_target(chars74k_ocr ${PYTHON_EXEC} ${SOURCE_DIR}/readChars74K.py
-                #   ${DATASETS_DIR}/Chars74K/English/Fnt
+                  # ${DATASETS_DIR}/Chars74K/English/Fnt
                   ${DATASETS_DIR}/dataset5
                   ${CMAKE_BINARY_DIR})
 

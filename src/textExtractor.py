@@ -174,7 +174,8 @@ class TextExtractor():
 
 def main(singleWord, multipleWords):
     print("OpenCV Version: {}". format(cv2. __version__))
-    t = TextExtractor(multipleWords)
+    t = TextExtractor()
+    t.readFromFilename(multipleWords)
     t.wordExtraction( 100, 200, 40, 40) # original values 300, 300, 40, 40
     t.characterExtraction()
 

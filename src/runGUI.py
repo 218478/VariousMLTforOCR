@@ -3,7 +3,8 @@ from PyQt5.QtGui import QPixmap, QImage, QPalette, QColor
 from PyQt5.QtCore import Qt
 import argparse, sys, os, cv2
 import numpy as np
-from tesserocr import PyTessBaseAPI
+from tesserocr import PyTessBaseAPI, RIL
+from PIL import Image
 import tesserocr
 
 from design import Ui_MainWindow
@@ -101,7 +102,8 @@ class myGUI(QMainWindow):
         https://stackoverflow.com/questions/37284161/i-used-opencv-to-convert-a-picture-to-grayscale-how-to-display-the-picture-on-py
         Answered by tfv on 17.05.2016 20:17          Accessed on 02.11.2017 20:02
         """
-        img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
+        if len(img.shape) == 2:
+            img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         height, width = img.shape[:2]
         return QImage(img, width, height, QImage.Format_RGB888)
 
@@ -138,17 +140,33 @@ class myGUI(QMainWindow):
         self.ui.textEdit.clear()
         self.ui.textEdit.append(s)
 
+    def tesseractBoundingBox(self, image):
+        '''
+        https://stackoverflow.com/questions/20831612/getting-the-bounding-box-of-the-recognized-words-using-python-tesseract
+        '''
+        image_boundedBoxes = image.copy()
+        with PyTessBaseAPI() as api:
+            api.SetImage(Image.fromarray(image))
+            boxes = api.GetComponentImages(RIL.TEXTLINE, True)
+            for i, (im, box, _, _) in enumerate(boxes):
+                # im is a PIL image object
+                # box is a dict with x, y, w and h keys
+                api.SetRectangle(box['x'], box['y'], box['w'], box['h'])
+                cv2.rectangle(image_boundedBoxes, (box['x'], box['y']), (box['x'] + box['w'], box['y']+box['h']),220,2)
+                ocrResult = api.GetUTF8Text()
+                conf = api.MeanTextConf()
+        return image_boundedBoxes
+
     def doOCR(self):
         image = cv2.imread(self.filename)
         self.tE.readFromImage(self.takeCareOfImageRotation(image))
         self.extractTextFromSelectedFile()
-        self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(self.cvtCvMatToQImg(self.tE.image).scaled(self.ui.labelImageAfterOCR.width(), self.ui.labelImageAfterOCR.height())))
-        if self.ui.comboBoxAlgorithms.currentIndex() == 0:
+        if self.ui.comboBoxAlgorithms.currentIndex() == 0: # CNN
+            self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(self.cvtCvMatToQImg(self.tE.image).scaled(self.ui.labelImageAfterOCR.width(), self.ui.labelImageAfterOCR.height())))
             self.reader = Reader_Chars74K()
             self.reader.classNo = self.classNo
             self.reader.createReadableLabels()
             self.outputText(self.getTextFromModel(self.modelCNN))
-            print("Convolutional Neural Network")
 
         if self.ui.comboBoxAlgorithms.currentIndex() == 1:
             print("Multilayer Perceptron Neural Network")
@@ -156,8 +174,8 @@ class myGUI(QMainWindow):
         if self.ui.comboBoxAlgorithms.currentIndex() == 2:
             print("k Nearest Neighbors")
 
-        if self.ui.comboBoxAlgorithms.currentIndex() == 3:
-            from PIL import Image
+        if self.ui.comboBoxAlgorithms.currentIndex() == 3: # Tesseract
+            self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(self.cvtCvMatToQImg(self.tesseractBoundingBox(image)).scaled(self.ui.labelImageAfterOCR.width(), self.ui.labelImageAfterOCR.height())))
             img = cv2.cvtColor(self.takeCareOfImageRotation(image), cv2.COLOR_BGR2RGB)
             self.outputText(tesserocr.image_to_text(Image.fromarray(img)))
 

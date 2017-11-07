@@ -17,4 +17,13 @@ class myNN:
         image = cv2.bitwise_not(image)
         # cv2.imwrite("converted.jpg", image)
         values = self.model.predict(image.reshape(1,16,16,1), verbose=False)
+        # TODO: !!!!
+
+#         wartosci: [[ nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan
+#    nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan
+#    nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan
+#    nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan  nan
+#    nan  nan  nan  nan  nan  nan]]
+
+        print("wartosci: " + str(values))
         return values.argmax()

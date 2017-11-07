@@ -1,11 +1,9 @@
 from keras import backend as K
-import keras
 from cnn import modelCNN
 # from mlp import modelMLP
 import numpy as np
-import argparse, logging, os, sys, math, json, cv2
+import argparse, logging, os, sys, math, json, cv2, keras
 from PIL import Image, ImageOps
-import cv2
 
 
 # TODO: making it a general reader??
@@ -100,7 +98,10 @@ class Reader_Chars74K:
                 # cv2.imshow("not negated", image)
                 # self.printImageArray(image)
                 # print("\n")
-                _,image = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV)
+
+                # IMPORTANT!!! EXPECTING BLACK FONT WITH WHITE BACKGROUND
+                # _,image = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV)
+                image = cv2.resize(cv2.bitwise_not(image),(16,16), interpolation = cv2.INTER_AREA)
                 # cv2.imshow("negated", image)
                 image = np.array(image)
                 # self.printImageArray(image)
@@ -108,6 +109,9 @@ class Reader_Chars74K:
                 # cv2.destroyAllWindows()
                 # print(image.shape)
                 # exit()
+                if self.imageIsNotValid(image):
+                    pass
+
                 if idx < self.trainCountPerClass[imgClass]:
                     # print(self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx].shape)
                     # print(image.shape)
@@ -124,6 +128,12 @@ class Reader_Chars74K:
         sys.stdout.write("\n")
         print(("Shape of read trainDataset: " + str(self.trainSet.shape)))
         print(("Shape of read testDataset: " + str(self.testSet.shape)))
+
+    def imageIsNotValid(self, image):
+        """
+        Checks if the image contains NaN or Inf records.
+        """
+        return np.isinf(image).any() or np.isnan(image).any()
 
     def saveArrayToFile(self, outfile):
         for_saving = np.array((self.trainLabels, self.trainSet, self.testLabels, self.testSet))
@@ -169,42 +179,43 @@ class Reader_Chars74K:
 
 def main(filepath):
     # CONSTANTS
-    batch_size = 256
-    epochs = 6
+    batch_size = 128
+    epochs = 1
     maxsize = (16, 16)
     classNo = 62
 
     r = Reader_Chars74K()
     r.setFilepaths(filepath, classNo)
-    r.loadImagesIntoMemory(0.9, maxsize)
-    outfile = "temp_to_save_np_array_for_my_dataset.temp"
-    r.saveArrayToFile(outfile)
+    # r.loadImagesIntoMemory(0.9, maxsize)
+    outfile = "temp_to_save_np_array_for_my_dataset5.temp"
+    # r.saveArrayToFile(outfile)
     # exit()
-    # r.loadArraysFromFile(outfile)
+    r.loadArraysFromFile(outfile)
     r.reshapeData(maxsize)
 
     # temp1 = r.testSet[200]
     # for row in temp1:
     #     for cell in row:
-    #         sys.stdout.write("%d " % cell)
+    #         sys.stdout.write("%0.2f " % cell)
     #     sys.stdout.write("\n")
     # print(r.testLabels[200])
     # exit()
-    # temp2 = r.testSet[4816]/32
-    # for row in temp2:
-    #     for cell in row:
-    #         if np.isclose(cell, 0):
-    #             sys.stdout.write("  ")
-    #         else:
-    #             sys.stdout.write("%d " % cell)
-    #     sys.stdout.write("\n")
-    # print(r.testLabels[4816])
+    temp2 = r.testSet[2816]
+    for row in temp2:
+        for cell in row:
+            if np.isclose(cell, 0):
+                sys.stdout.write("  ")
+            else:
+                sys.stdout.write("%d " % np.ceil(cell))
+        sys.stdout.write("\n")
+    print(r.testLabels[2816])
 
-    model = modelCNN(maxsize, classNo)#,"trained_model_for_my_dataset.h5")
+    model = modelCNN(maxsize, classNo)#,"trained_model_for_my_dataset5.h5")
+    print("Klasa: " + str(model.predict(r.testSet[2816])))
     # model = modelMLP(maxsize, classNo)#, "trained_model.h5") it works but needs file to be imported
-    model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
+    # model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
     model.saveKerasModel("trained_model_for_my_dataset5.h5")
-    values = model.predict(r.testSet[2040].reshape(16,16))
+    values = model.predict(r.testSet[2040])
     print(values)
     print((values.argmax()))
     print((r.testLabels[2040].argmax()))
