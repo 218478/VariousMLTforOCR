@@ -159,7 +159,7 @@ def kNNforMNIST(images, n):
     exit()
 
 # TODO: change the name of n variable
-def createPatternSetForKNN(images, classesNo, n=10):
+def createPatternSetForKNN(images, classesNo, n=62):
     """
     Creates pattern for kNN image recognition. Parameter n tells
     how many role models should the algorithm base for each class.
@@ -175,9 +175,8 @@ def createPatternSetForKNN(images, classesNo, n=10):
         if howManyLeft[image[0]] > 0:
             patternSet[image[0]][n-howManyLeft[image[0]]] = np.ravel(image[1])
             howManyLeft[image[0]] -= 1
-
     return patternSet
-    
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("pathToDatasets", help="Directory to stored datasets")

@@ -18,7 +18,6 @@ def test_single_word():
     assert len(extractor.charactersFromWord) == len(extractor.words)
     assert len(extractor.charactersFromWord[0]) == 6
 
-# @pytest.mark.skip(reason="now only checking single but test passes for multiple too")
 def test_text_fragment():
     extractor = TextExtractor()
     extractor.readFromFilename(textFragment_image)

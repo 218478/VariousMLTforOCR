@@ -1,9 +1,11 @@
 from keras import backend as K
 from cnn import modelCNN
-# from mlp import modelMLP
+from mlp import modelMLP
+from cnn_different import modelCNN2
 import numpy as np
 import argparse, logging, os, sys, math, json, cv2, keras
 from PIL import Image, ImageOps
+from knn import kNN
 
 
 # TODO: making it a general reader??
@@ -21,7 +23,7 @@ class Reader_Chars74K:
         i = 0
         for root, dirs, files in os.walk(filepath):
             path = root.split(os.sep)
-            print(((len(path) - 1) * '---', os.path.basename(root)))
+            # print(((len(path) - 1) * '---', os.path.basename(root)))
             filepathsForSpecificClass = []
             for file in files:
                 file = os.path.join(root, file)
@@ -70,7 +72,9 @@ class Reader_Chars74K:
         for idx, val in enumerate(self.filepaths): # counting images in every class
             counts[idx] = len(val) # TODO: use this value in the for loop below and use list comprehension
         print(("Filenames array size: " + str((sys.getsizeof(self.filepaths[0]) + sys.getsizeof(self.filepaths[1]))*self.classNo/1024) + " kB"))
-        print(("Read: " + str(len(self.filepaths[1]*len(self.filepaths)))))
+        print("len(self.filepaths[1]) = " + str(len(self.filepaths[1])))
+        print("len(self.filepaths) = " + str(len(self.filepaths)))
+        print(("Read: " + str(len(self.filepaths[1])*len(self.filepaths))))
         print ("Reading images into memory")
         print(("I have %d classes" % self.classNo))
 
@@ -87,36 +91,20 @@ class Reader_Chars74K:
         sys.stdout.write("[%s]" % (" " * toolbar_width))
         sys.stdout.flush()
         sys.stdout.write("\b" * (toolbar_width+1)) # return to start of line, after '['
+
         for imgClass in range(0, self.classNo-1):
-            idx = 0
-            for filepath in self.filepaths[imgClass]:
-                image = Image.open(filepath, mode="r").convert('LA')
-                image = cv2.imread(filepath)
-                # image.thumbnail(maxsize, Image.ANTIALIAS)
-                # image = self.getWhiteImageBlackBackground(image) # negates
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                # cv2.imshow("not negated", image)
-                # self.printImageArray(image)
-                # print("\n")
+            for idx, filepath in enumerate(self.filepaths[imgClass]):
+                image = cv2.imread(filepath, flags=cv2.IMREAD_GRAYSCALE)
 
                 # IMPORTANT!!! EXPECTING BLACK FONT WITH WHITE BACKGROUND
-                # _,image = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV)
-                image = cv2.resize(cv2.bitwise_not(image),(16,16), interpolation = cv2.INTER_AREA)
-                # cv2.imshow("negated", image)
+                _,image = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV)
+                image = cv2.resize(image,(16,16), interpolation = cv2.INTER_AREA)
                 image = np.array(image)
-                # self.printImageArray(image)
-                # cv2.waitKey()
-                # cv2.destroyAllWindows()
-                # print(image.shape)
-                # exit()
                 if self.imageIsNotValid(image):
                     pass
 
                 if idx < self.trainCountPerClass[imgClass]:
-                    # print(self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx].shape)
-                    # print(image.shape)
                     self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx] = image
-                    # print(self.trainSet[imgClass*self.trainCountPerClass[imgClass]+idx])
                     self.trainLabels[imgClass*self.trainCountPerClass[imgClass]+idx] = imgClass
                 else:
                     self.testSet[imgClass*self.testCountPerClass[imgClass] + idx-self.trainCountPerClass[imgClass]] = image
@@ -124,6 +112,10 @@ class Reader_Chars74K:
                 idx += 1
             sys.stdout.write("-")
             sys.stdout.flush()
+            # self.printImageArray(image)
+            # cv2.imshow("test",image)
+            # cv2.waitKey()
+            # cv2.destroyAllWindows()
 
         sys.stdout.write("\n")
         print(("Shape of read trainDataset: " + str(self.trainSet.shape)))
@@ -148,9 +140,20 @@ class Reader_Chars74K:
         print(("Length of training set: " + str(len(self.trainSet))))
         print(("Length of test set: " + str(len(self.testSet))))
 
-    def reshapeData(self, maxsize):
-        img_rows = maxsize[0]
-        img_cols = maxsize[1]
+    def reshapeDataForMLP(self, maxsize):
+        self.trainSet = self.trainSet.reshape(len(self.trainSet),maxsize[0]*maxsize[1])
+        self.testSet = self.testSet.reshape(len(self.testSet),maxsize[0]*maxsize[1])
+
+        self.trainSet = self.trainSet.astype('float32')
+        self.testSet = self.testSet.astype('float32')
+        self.trainSet /= 255
+        self.testSet /= 255
+
+        self.trainLabels = keras.utils.to_categorical(self.trainLabels, self.classNo)
+        self.testLabels = keras.utils.to_categorical(self.testLabels, self.classNo)
+
+    def reshapeDataForCNN(self, maxsize):
+        img_rows, img_cols = maxsize
         if K.image_data_format() == 'channels_first':
             self.trainSet = self.trainSet.reshape(self.trainSet.shape[0], 1, img_rows, img_cols)
             self.testSet = self.testSet.reshape(self.testSet.shape[0], 1, img_rows, img_cols)
@@ -161,8 +164,8 @@ class Reader_Chars74K:
         # print(("Shape after reshape: " + str(self.trainSet.shape[0])))
         self.trainSet = self.trainSet.astype('float32')
         self.testSet = self.testSet.astype('float32')
-        self.trainSet /= 255.0 # this was 255.0
-        self.testSet /= 255.0 # this was 255.0
+        self.trainSet /= 255
+        self.testSet /= 255
         print(('self.trainSet shape:', self.trainSet.shape))
         print((self.trainSet.shape[0], 'train samples'))
         print(('self.testSet shape:', self.testSet.shape))
@@ -178,47 +181,34 @@ class Reader_Chars74K:
             sys.stdout.write("\n")
 
 def main(filepath):
-    # CONSTANTS
-    batch_size = 128
-    epochs = 1
+    batch_size = 512
+    epochs = 20
     maxsize = (16, 16)
     classNo = 62
 
     r = Reader_Chars74K()
     r.setFilepaths(filepath, classNo)
-    # r.loadImagesIntoMemory(0.9, maxsize)
-    outfile = "temp_to_save_np_array_for_my_dataset5.temp"
+    r.loadImagesIntoMemory(0.9, maxsize)
+    outfile = "temp_to_save_np_array.temp"
     # r.saveArrayToFile(outfile)
-    # exit()
     r.loadArraysFromFile(outfile)
-    r.reshapeData(maxsize)
-
-    # temp1 = r.testSet[200]
-    # for row in temp1:
-    #     for cell in row:
-    #         sys.stdout.write("%0.2f " % cell)
-    #     sys.stdout.write("\n")
-    # print(r.testLabels[200])
+    r.reshapeDataForCNN(maxsize)
+    # r.reshapeDataForMLP(maxsize)
+    # k = kNN()
+    # r.printImageArray(k._createPatternSetForKNN(r.trainSet, classNo)[2])
     # exit()
-    temp2 = r.testSet[2816]
-    for row in temp2:
-        for cell in row:
-            if np.isclose(cell, 0):
-                sys.stdout.write("  ")
-            else:
-                sys.stdout.write("%d " % np.ceil(cell))
-        sys.stdout.write("\n")
-    print(r.testLabels[2816])
 
-    model = modelCNN(maxsize, classNo)#,"trained_model_for_my_dataset5.h5")
-    print("Klasa: " + str(model.predict(r.testSet[2816])))
-    # model = modelMLP(maxsize, classNo)#, "trained_model.h5") it works but needs file to be imported
-    # model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
-    model.saveKerasModel("trained_model_for_my_dataset5.h5")
-    values = model.predict(r.testSet[2040])
-    print(values)
-    print((values.argmax()))
-    print((r.testLabels[2040].argmax()))
+    model = modelCNN(maxsize, classNo)#,"cnn_model_for_my_dataset.h5")
+    # model = modelMLP(maxsize, classNo)#, "mlp_model_for_my_dataset.h5")
+    model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
+    model.saveKerasModel("cnn_model_for_my_dataset.h5")
+    image = r.testSet[2816]
+    cv2.imshow("test",image)
+    cv2.waitKey()
+    cv2.destroyAllWindows()
+    values = model.predict(image,using_training_set=True)
+    print("Predicted: " + str(values))
+    print("Should be: " + str((r.testLabels[2816].argmax())))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

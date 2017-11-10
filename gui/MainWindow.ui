@@ -187,7 +187,7 @@
                 <number>100</number>
                </property>
                <property name="maximum">
-                <number>400</number>
+                <number>200</number>
                </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -217,10 +217,10 @@
              <item>
               <widget class="QSlider" name="horizontalSliderMinH">
                <property name="minimum">
-                <number>100</number>
+                <number>0</number>
                </property>
                <property name="maximum">
-                <number>400</number>
+                <number>100</number>
                </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -236,7 +236,7 @@
                 </sizepolicy>
                </property>
                <property name="text">
-                <string>minH</string>
+                <string/>
                </property>
                <property name="pixmap">
                 <pixmap>../../../Pictures/img002-00001.png</pixmap>
@@ -289,7 +289,7 @@
                 <number>10</number>
                </property>
                <property name="maximum">
-                <number>80</number>
+                <number>40</number>
                </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -341,8 +341,6 @@
           </layout>
          </item>
         </layout>
-        <zorder>labelAlgorithmChoice</zorder>
-        <zorder>layoutWidget</zorder>
        </widget>
       </item>
      </layout>

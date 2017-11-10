@@ -1,14 +1,15 @@
 from PyQt5.QtWidgets import QApplication, QMainWindow, QFileDialog, QStyleFactory
 from PyQt5.QtGui import QPixmap, QImage, QPalette, QColor
 from PyQt5.QtCore import Qt
-import argparse, sys, os, cv2
+import argparse, sys, os, cv2, tesserocr
 import numpy as np
 from tesserocr import PyTessBaseAPI, RIL
 from PIL import Image
-import tesserocr
 
 from design import Ui_MainWindow
 from cnn import modelCNN
+from mlp import modelMLP
+from knn import kNN
 from textExtractor import TextExtractor
 from readChars74K import Reader_Chars74K # TODO: hard-code classes
 
@@ -29,7 +30,7 @@ class myGUI(QMainWindow):
         self.classNo = 62
         self.filename = ""
         self.tE = TextExtractor()
-        self.modelCNN = modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model_for_my_dataset5.h5"))
+        self.modelCNN = modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model_for_my_dataset.h5"))
 
     # TODO: add drag'n'drop functionality
     def dragEnterEvent(self, e):
@@ -56,7 +57,7 @@ class myGUI(QMainWindow):
         self.ui.comboBoxAlgorithms.addItem("Convolutional Neural Network")
         self.ui.comboBoxAlgorithms.addItem("Multilayer Perceptron Neural Network")
         self.ui.comboBoxAlgorithms.addItem("k Nearest Neighbors")
-        self.ui.comboBoxAlgorithms.addItem("Tesseract")
+        self.ui.comboBoxAlgorithms.addItem("Tesseract API")
 
     def setup(self):
         self.ui.setupUi(self)
@@ -67,18 +68,19 @@ class myGUI(QMainWindow):
         self.setupComboBox()
 
     def openFileDialog(self):
-        self.filename = QFileDialog(parent=self).getOpenFileName(options=QFileDialog.DontUseNativeDialog)[0] # directory='../VariousMLTforOCR/testing/example_images/'
+        self.filename = QFileDialog(parent=self).getOpenFileName(options=QFileDialog.DontUseNativeDialog)[0]
         if len(self.filename) != 0:
             self.ui.labelImage.setPixmap(QPixmap(self.filename))
             self.ui.labelImage.setMaximumHeight(int(self.ui.centralwidget.height()/2))
             self.ui.labelImage.setMaximumWidth(int(self.ui.centralwidget.width()/2))
+            self.tE.initializeWordsAndCharsContainers()
             self.doOCR()
 
     def doOCRwhenSliderUsed(self):
-        self.ui.lcdmaxH.display(str(self.ui.horizontalSliderMaxH.value))
-        self.ui.lcdminH.display(str(self.ui.horizontalSliderMinH.value))
-        self.ui.lcdminW.display(str(self.ui.horizontalSliderMaxW.value))
-        self.ui.lcdminW.display(str(self.ui.horizontalSliderMinW.value))
+        self.ui.lcdmaxH.display(str(self.ui.horizontalSliderMaxH.value()))
+        self.ui.lcdminH.display(str(self.ui.horizontalSliderMinH.value()))
+        self.ui.lcdminW.display(str(self.ui.horizontalSliderMaxW.value()))
+        self.ui.lcdminW.display(str(self.ui.horizontalSliderMinW.value()))
         if len(self.filename) != 0:
             self.doOCR()
 
@@ -93,7 +95,7 @@ class myGUI(QMainWindow):
     def extractTextFromSelectedFile(self):
         self.tE.wordExtraction(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
                                self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value())
-        self.tE.characterExtraction()
+        self.tE.characterExtraction(displayImages=True)
         self.tE.reverseEverything()
 
     def cvtCvMatToQImg(self, img):
@@ -105,16 +107,19 @@ class myGUI(QMainWindow):
         if len(img.shape) == 2:
             img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
         height, width = img.shape[:2]
-        return QImage(img, width, height, QImage.Format_RGB888)
+        bytesPerLine = 3 * width
+        return QImage(img.data, width, height, bytesPerLine, QImage.Format_RGB888)
 
     def takeCareOfImageRotation(self, image):
         """
+        TODO: image rotation is faulty
         https://www.pyimagesearch.com/2017/02/20/text-skew-correction-opencv-python/
         """
         if len(image.shape) > 2:
             gray = cv2.bitwise_not(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
         else:
             gray = cv2.bitwise_not(image)
+        cv2.imshow("before rotation", gray)
         thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 
         # grab the (x, y) coordinates of all pixel values that are greater than zero, then use these coordinates to
@@ -134,6 +139,9 @@ class myGUI(QMainWindow):
         center = (w // 2, h // 2)
         M = cv2.getRotationMatrix2D(center, angle, 1.0)
         rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
+        cv2.imshow("after rotation", rotated)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
         return rotated
 
     def outputText(self, s):

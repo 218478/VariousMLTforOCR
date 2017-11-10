@@ -96,6 +96,7 @@ class TextExtractor():
                     break
 
             x1, x2 , letters = 0, 0, ()
+            avg_width, width = 100, []
             # detect breaks between letters
             for col in range(img.shape[1]):
                 zeroResult = np.isclose(np.dot(np.ones((1 ,img.shape[0])),img[:,col]), 0)
@@ -106,6 +107,7 @@ class TextExtractor():
                     scanningLetter = True
                     # print("poczatek literki")
                 if zeroResult and scanningLetter: # letter end
+                    width.append(x2-x1)
                     x2 = col
                     if col < img.shape[1] - margin:
                         x2 += margin
@@ -121,7 +123,7 @@ class TextExtractor():
                 if displayImages == True:
                     cv2.imshow("cropped_" + str(idxChar), letter)
                     cv2.moveWindow("cropped_" + str(idxChar), 30*(1+idxChar), 30*(1+idxChar))
-                self.addCharToIthWord(idxWord, idxChar, letter)
+                self.addCharToIthWord(idxWord, idxChar, cv2.resize(letter,(16,16),interpolation=cv2.INTER_AREA))
             if displayImages == True:
                 cv2.imshow("whole_word", word)
                 cv2.waitKey()
@@ -129,7 +131,7 @@ class TextExtractor():
 
     def wordExtraction(self, maxH=100, maxW=200, minH=40, minW=40, displayImages=False):
         '''
-        Grayscales images and contours an image.
+        Expects grayscale image. The function is looking for contours in an image.
         https://stackoverflow.com/questions/23506105/extracting-text-opencv
 
         answered May 9 '14 at 5:07 by anana
