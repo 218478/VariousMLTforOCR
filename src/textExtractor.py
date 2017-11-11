@@ -2,9 +2,11 @@ import numpy as np
 import cv2, os, argparse, logging, sys
 
 class TextExtractor():
-    def __init__(self, grayValue = 150, boxThickness = 5):
-        self.grayValue = grayValue
-        self.boxThickness = boxThickness
+    def __init__(self):
+        self.wordBorderValue = 150
+        self.boxThicknessWords = 5
+        self.charBorderValue = 90
+        self.boxThicknessChars = 1
         self.initializeWordsAndCharsContainers()
 
     def initializeWordsAndCharsContainers(self):
@@ -116,7 +118,7 @@ class TextExtractor():
                     # print("szerokosc: %d" % (x2-x1))
 
                     letters = letters + (imgCopy[upperBorder:lowerBorder, x1:x2],)
-                    cv2.rectangle(word, (x1,upperBorder),(x2,lowerBorder),self.grayValue,self.boxThickness)
+                    cv2.rectangle(word, (x1,upperBorder),(x2,lowerBorder),self.charBorderValue,self.boxThicknessChars)
 
 
             for idxChar, letter in enumerate(letters):
@@ -141,7 +143,7 @@ class TextExtractor():
         _,thresh = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV)
         kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
         dilated = cv2.dilate(thresh,kernel,iterations = 13)
-        _, contours, hierarchy = cv2.findContours(dilated,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+        _, contours, hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 
         self._contours = ()
         for idx, contour in enumerate(contours):
@@ -152,7 +154,7 @@ class TextExtractor():
             # discard areas that are too small
             if h<minH or w<minW:
                 continue
-            cv2.rectangle(self.image,(x,y),(x+w,y+h),self.grayValue,self.boxThickness)
+            cv2.rectangle(self.image,(x,y),(x+w,y+h),self.wordBorderValue,self.boxThicknessWords)
             self._contours = self._contours + (image[y:y+h,x:x+w],)
 
         for idx, img in enumerate(self._contours):

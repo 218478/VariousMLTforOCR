@@ -5,6 +5,7 @@ import argparse, sys, os, cv2, tesserocr
 import numpy as np
 from tesserocr import PyTessBaseAPI, RIL
 from PIL import Image
+from time import time
 
 from design import Ui_MainWindow
 from cnn import modelCNN
@@ -44,14 +45,11 @@ class myGUI(QMainWindow):
 
     def setupEvents(self):
         self.ui.pushButtonLoadFile.clicked.connect(self.openFileDialog)
-        self.ui.horizontalSliderMaxH.sliderReleased.connect(self.doOCRwhenSliderUsed)
-        self.ui.horizontalSliderMinH.sliderReleased.connect(self.doOCRwhenSliderUsed)
-        self.ui.horizontalSliderMaxW.sliderReleased.connect(self.doOCRwhenSliderUsed)
-        self.ui.horizontalSliderMinW.sliderReleased.connect(self.doOCRwhenSliderUsed)
-        self.ui.pushButtonCamera.clicked.connect(self.setupCamera)
-
-    def setupCamera(self):
-        print("TODO: implement camera functionality")
+        self.ui.pushButton_doOCR.clicked.connect(self.doOCR)
+        self.ui.horizontalSliderMaxH.valueChanged.connect(self.displayLCDValue)
+        self.ui.horizontalSliderMinH.valueChanged.connect(self.displayLCDValue)
+        self.ui.horizontalSliderMaxW.valueChanged.connect(self.displayLCDValue)
+        self.ui.horizontalSliderMinW.valueChanged.connect(self.displayLCDValue)
 
     def setupComboBox(self):
         self.ui.comboBoxAlgorithms.addItem("Convolutional Neural Network")
@@ -62,27 +60,37 @@ class myGUI(QMainWindow):
     def setup(self):
         self.ui.setupUi(self)
         self.setupEvents()
-        self.ui.statusBar.showMessage("by Kamil Kuczaj 2017")
         self.ui.labelImage.setScaledContents(True)
         self.ui.labelImageAfterOCR.setScaledContents(True)
+        self.ui.lcdmaxH.display(str(self.ui.horizontalSliderMaxH.value()))
+        self.ui.lcdminH.display(str(self.ui.horizontalSliderMinH.value()))
+        self.ui.lcdmaxW.display(str(self.ui.horizontalSliderMaxW.value()))
+        self.ui.lcdminW.display(str(self.ui.horizontalSliderMinW.value()))
         self.setupComboBox()
+
+    def setSliderValues(self, width, height):
+        self.ui.horizontalSliderMaxH.setMaximum(height)
+        self.ui.horizontalSliderMaxH.setMinimum(0)
+        self.ui.horizontalSliderMinH.setMaximum(height)
+        self.ui.horizontalSliderMinH.setMinimum(0)
+        self.ui.horizontalSliderMaxW.setMaximum(width)
+        self.ui.horizontalSliderMaxW.setMinimum(0)
+        self.ui.horizontalSliderMinW.setMaximum(width)
+        self.ui.horizontalSliderMinW.setMinimum(0)
 
     def openFileDialog(self):
         self.filename = QFileDialog(parent=self).getOpenFileName(options=QFileDialog.DontUseNativeDialog)[0]
         if len(self.filename) != 0:
-            self.ui.labelImage.setPixmap(QPixmap(self.filename))
-            self.ui.labelImage.setMaximumHeight(int(self.ui.centralwidget.height()/2))
-            self.ui.labelImage.setMaximumWidth(int(self.ui.centralwidget.width()/2))
-            self.tE.initializeWordsAndCharsContainers()
-            self.doOCR()
+            width, height = self.ui.labelImage.width(), self.ui.labelImage.height()
+            self.ui.labelImage.setPixmap(QPixmap(self.filename).scaled(width, height))
+            width, height = cv2.imread(self.filename).shape[:2]
+            self.setSliderValues(width, height)
 
-    def doOCRwhenSliderUsed(self):
+    def displayLCDValue(self):
         self.ui.lcdmaxH.display(str(self.ui.horizontalSliderMaxH.value()))
         self.ui.lcdminH.display(str(self.ui.horizontalSliderMinH.value()))
-        self.ui.lcdminW.display(str(self.ui.horizontalSliderMaxW.value()))
+        self.ui.lcdmaxW.display(str(self.ui.horizontalSliderMaxW.value()))
         self.ui.lcdminW.display(str(self.ui.horizontalSliderMinW.value()))
-        if len(self.filename) != 0:
-            self.doOCR()
 
     def getTextFromModel(self, model):
         s = ""
@@ -90,12 +98,12 @@ class myGUI(QMainWindow):
             for char in word:
                 s += self.reader.readableLabels[model.predict(char)]
             s += " "
-        return s
+        return s[:-2] # don't include space at the end
 
     def extractTextFromSelectedFile(self):
         self.tE.wordExtraction(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
                                self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value())
-        self.tE.characterExtraction(displayImages=True)
+        self.tE.characterExtraction(displayImages=False)
         self.tE.reverseEverything()
 
     def cvtCvMatToQImg(self, img):
@@ -112,7 +120,6 @@ class myGUI(QMainWindow):
 
     def takeCareOfImageRotation(self, image):
         """
-        TODO: image rotation is faulty
         https://www.pyimagesearch.com/2017/02/20/text-skew-correction-opencv-python/
         """
         if len(image.shape) > 2:
@@ -140,7 +147,7 @@ class myGUI(QMainWindow):
         M = cv2.getRotationMatrix2D(center, angle, 1.0)
         rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
         cv2.imshow("after rotation", rotated)
-        cv2.waitKey()
+        # cv2.waitKey()
         cv2.destroyAllWindows()
         return rotated
 
@@ -157,8 +164,6 @@ class myGUI(QMainWindow):
             api.SetImage(Image.fromarray(image))
             boxes = api.GetComponentImages(RIL.TEXTLINE, True)
             for i, (im, box, _, _) in enumerate(boxes):
-                # im is a PIL image object
-                # box is a dict with x, y, w and h keys
                 api.SetRectangle(box['x'], box['y'], box['w'], box['h'])
                 cv2.rectangle(image_boundedBoxes, (box['x'], box['y']), (box['x'] + box['w'], box['y']+box['h']),220,2)
                 ocrResult = api.GetUTF8Text()
@@ -166,26 +171,31 @@ class myGUI(QMainWindow):
         return image_boundedBoxes
 
     def doOCR(self):
-        image = cv2.imread(self.filename)
-        self.tE.readFromImage(self.takeCareOfImageRotation(image))
+        if len(self.filename) == 0:
+            return
+        start = time()
+        self.image = cv2.imread(self.filename)
+        self.tE.readFromImage(self.takeCareOfImageRotation(self.image))
         self.extractTextFromSelectedFile()
+        width, height = self.ui.labelImageAfterOCR.width(), self.ui.labelImageAfterOCR.height()
         if self.ui.comboBoxAlgorithms.currentIndex() == 0: # CNN
-            self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(self.cvtCvMatToQImg(self.tE.image).scaled(self.ui.labelImageAfterOCR.width(), self.ui.labelImageAfterOCR.height())))
+            qImg = self.cvtCvMatToQImg(self.tE.image).scaled(width, height)
+            self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(qImg))
             self.reader = Reader_Chars74K()
             self.reader.classNo = self.classNo
             self.reader.createReadableLabels()
             self.outputText(self.getTextFromModel(self.modelCNN))
 
-        if self.ui.comboBoxAlgorithms.currentIndex() == 1:
-            print("Multilayer Perceptron Neural Network")
-
         if self.ui.comboBoxAlgorithms.currentIndex() == 2:
             print("k Nearest Neighbors")
 
         if self.ui.comboBoxAlgorithms.currentIndex() == 3: # Tesseract
-            self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(self.cvtCvMatToQImg(self.tesseractBoundingBox(image)).scaled(self.ui.labelImageAfterOCR.width(), self.ui.labelImageAfterOCR.height())))
-            img = cv2.cvtColor(self.takeCareOfImageRotation(image), cv2.COLOR_BGR2RGB)
+            qImg = self.cvtCvMatToQImg(self.tesseractBoundingBox(self.image)).scaled(width, height)
+            self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(qImg))
+            img = cv2.cvtColor(self.takeCareOfImageRotation(self.image), cv2.COLOR_BGR2RGB)
             self.outputText(tesserocr.image_to_text(Image.fromarray(img)))
+        stop = time()
+        self.ui.statusBar.showMessage("The operation took: " + str(stop-start) + " seconds")
 
 
 def main(pathToNNModels):
