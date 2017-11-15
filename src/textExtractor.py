@@ -2,11 +2,12 @@ import numpy as np
 import cv2, os, argparse, logging, sys
 
 class TextExtractor():
-    def __init__(self):
+    def __init__(self, maxsize):
         self.wordBorderValue = 150
         self.boxThicknessWords = 5
         self.charBorderValue = 90
         self.boxThicknessChars = 1
+        self.maxsize = maxsize
         self.initializeWordsAndCharsContainers()
 
     def initializeWordsAndCharsContainers(self):
@@ -54,7 +55,7 @@ class TextExtractor():
 
     def resizeLetter(self, letter):
         # TODO: the size can't be hardcoded
-        img = np.full((64,64), 0, np.uint8)
+        img = np.full((self.maxsize[0],self.maxsize[1]), 0, np.uint8)
         print("letter shape before reshape= " + str(letter.shape))
         height, width = letter.shape
         desired_height, desired_width = img.shape

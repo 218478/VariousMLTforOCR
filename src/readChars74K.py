@@ -143,6 +143,24 @@ class Reader_Chars74K:
         self.trainLabels = keras.utils.to_categorical(self.trainLabels, self.classNo)
         self.testLabels = keras.utils.to_categorical(self.testLabels, self.classNo)
 
+    def reshapeDataForkNN(self, maxsize):
+        img_rows, img_cols = maxsize
+        self.trainSet = self.trainSet.reshape(self.trainSet.shape[0], img_rows * img_cols)
+        self.testSet = self.testSet.reshape(self.testSet.shape[0], img_rows * img_cols)
+        self.trainSet = self.trainSet.astype(np.float32)
+        self.testSet = self.testSet.astype(np.float32)
+        self.trainLabels = self.trainLabels.astype(np.float32)
+        self.testLabels = self.testLabels.astype(np.float32)
+        self.trainLabels = self.trainLabels.reshape(self.trainLabels.shape[0],1)
+        self.testLabels = self.testLabels.reshape(self.testLabels.shape[0],1)
+        print("self.trainLabels[0] = " + str(self.trainLabels[0]))
+        print(('self.trainLabels shape:', self.trainLabels.shape))
+        print(('self.testLabels shape:', self.testLabels.shape))
+        print(('self.trainSet shape:', self.trainSet.shape))
+        print((self.trainSet.shape[0], 'train samples'))
+        print(('self.testSet shape:', self.testSet.shape))
+        print((self.testSet.shape[0], 'test samples'))
+
     def reshapeDataForCNN(self, maxsize):
         img_rows, img_cols = maxsize
         if K.image_data_format() == 'channels_first':
@@ -172,7 +190,7 @@ class Reader_Chars74K:
                 sys.stdout.write("%d " % cell)
             sys.stdout.write("\n")
 
-    def testLetterFromTestSet(self, model, n):
+    def testLetterFromTestSetNN(self, model, n):
         image = self.testSet[n]
         cv2.imshow("test",image)
         cv2.waitKey()
@@ -180,6 +198,16 @@ class Reader_Chars74K:
         values = model.predict(image, using_training_set=True)
         print("Predicted: " + str(values))
         print("Should be: " + str((self.testLabels[n].argmax())))
+
+    def testLetterFromTestSetkNN(self, model, n):
+        image = self.testSet[n]
+        values = model.predict(image, using_training_set=True)
+        print("Predicted: " + str(values))
+        print("Should be: " + str(self.testLabels[n]))
+        image = cv2.resize(image,(64,64))
+        cv2.imshow("test",image)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
 
 def main(filepath):
     batch_size = 128
@@ -193,19 +221,38 @@ def main(filepath):
     outfile = "temp_to_save_np_array.temp"
     # r.saveArrayToFile(outfile)
     r.loadArraysFromFile(outfile)
-    r.reshapeDataForCNN(maxsize)
+    r.reshapeDataForkNN(maxsize)
+    # r.reshapeDataForCNN(maxsize)
     # r.reshapeDataForMLP(maxsize)
-    # k = kNN()
-    # r.printImageArray(k._createPatternSetForKNN(r.trainSet, classNo)[2])
-    # exit()
 
-    model = modelCNN(maxsize, classNo,"cnn_model_for_my_dataset_64x64_2.h5")
+
+    # bestK = 1
+    # prevAcc = 0
+    # for k in range(1,14):
+    #     model = kNN(maxsize, k)
+    #     model.train(r.trainSet, r.trainLabels)
+    #     acc = model.accuracy(r.testSet, r.testLabels)
+    #     if acc > prevAcc:
+    #         bestK = k
+    #         prevAcc = acc
+    # print("best acc (" + str(prevAcc) + ") for " + str(bestK) + " neighbors")
+
+
+    # best acc (91.45161290322581) for 11 neighbors
+    model = kNN(maxsize, 11)
+    model.train(r.trainSet, r.trainLabels)
+    np.savez('knn_data.npz',trainSet=r.trainSet, trainLabels=r.trainLabels)
+
+    with np.load('knn_data.npz') as data:
+        print( data.files )
+
+    # model = modelCNN(maxsize, classNo,"cnn_model_for_my_dataset_64x64_2.h5")
     # model = modelMLP(maxsize, classNo)#, "mlp_model_for_my_dataset.h5")
     # model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
     # model.saveKerasModel("cnn_model_for_my_dataset_64x64_2.h5")
-    r.testLetterFromTestSet(model, 281)
-    r.testLetterFromTestSet(model, 28)
-    r.testLetterFromTestSet(model, 57)
+    r.testLetterFromTestSetkNN(model, 281)
+    r.testLetterFromTestSetkNN(model, 28)
+    r.testLetterFromTestSetkNN(model, 57)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

@@ -30,8 +30,11 @@ class myGUI(QMainWindow):
         self.maxsize = (imgHeight, imgWidth)
         self.classNo = 62
         self.filename = ""
-        self.tE = TextExtractor()
+        self.tE = TextExtractor(self.maxsize)
         self.modelCNN = modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model_for_my_dataset_64x64.h5"))
+        self.kNN = kNN(self.maxsize, k=11)
+        with np.load(os.path.join(self.pathToNNModels,'knn_data.npz')) as data:
+            self.kNN.train(data['trainSet'], data['trainLabels'])
 
     # TODO: add drag'n'drop functionality
     def dragEnterEvent(self, e):
@@ -103,8 +106,8 @@ class myGUI(QMainWindow):
 
     def extractTextFromSelectedFile(self):
         self.tE.wordExtraction(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
-                               self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value(),displayImages=True)
-        self.tE.characterExtraction(displayImages=True, verbose=True)
+                               self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value(),displayImages=False)
+        self.tE.characterExtraction(displayImages=False, verbose=False)
         self.tE.reverseEverything()
 
     def cvtCvMatToQImg(self, img):
@@ -127,7 +130,7 @@ class myGUI(QMainWindow):
             gray = cv2.bitwise_not(cv2.cvtColor(image, cv2.COLOR_BGR2GRAY))
         else:
             gray = cv2.bitwise_not(image)
-        cv2.imshow("before rotation", gray)
+        # cv2.imshow("before rotation", gray)
         thresh = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
 
         # grab the (x, y) coordinates of all pixel values that are greater than zero, then use these coordinates to
@@ -147,9 +150,9 @@ class myGUI(QMainWindow):
         center = (w // 2, h // 2)
         M = cv2.getRotationMatrix2D(center, angle, 1.0)
         rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
-        cv2.imshow("after rotation", rotated)
-        cv2.waitKey()
-        cv2.destroyAllWindows()
+        # cv2.imshow("after rotation", rotated)
+        # cv2.waitKey()
+        # cv2.destroyAllWindows()
         return rotated
 
     def outputText(self, s):
@@ -188,6 +191,12 @@ class myGUI(QMainWindow):
             self.outputText(self.getTextFromModel(self.modelCNN))
 
         if self.ui.comboBoxAlgorithms.currentIndex() == 2:
+            qImg = self.cvtCvMatToQImg(self.tE.image).scaled(width, height)
+            self.ui.labelImageAfterOCR.setPixmap(QPixmap.fromImage(qImg))
+            self.reader = Reader_Chars74K()
+            self.reader.classNo = self.classNo
+            self.reader.createReadableLabels()
+            self.outputText(self.getTextFromModel(self.kNN))
             print("k Nearest Neighbors")
 
         if self.ui.comboBoxAlgorithms.currentIndex() == 3: # Tesseract
