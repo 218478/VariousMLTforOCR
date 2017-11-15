@@ -21,7 +21,7 @@ class DatasetCreator():
     '''
     Parallel generator of 62 classes - 10 digits and 26 of each capital and normal letters.
     '''
-    def __init__(self, height = 16, width = 16, classNo=62, bckgColor = (255, 255, 255)):
+    def __init__(self, height = 64, width = 32, classNo=62, bckgColor = (255, 255, 255)):
         self.height = height
         self.width = width
         self.classNo = classNo
@@ -39,6 +39,7 @@ class DatasetCreator():
         return image
 
     def createReadableLabels(self):
+        # TODO: should depend on textReader because it's copy&pasted here
         self.readableLabels = [[]]*self.classNo
         for i in range(0,10):
             self.readableLabels[i] = str(i)
@@ -100,10 +101,10 @@ class DatasetCreator():
             # All images must have numpy's dtype uint8. Values are expected to be in
             # range 0-255.
             fonts = [cv2.FONT_HERSHEY_SIMPLEX,
-                     cv2.FONT_HERSHEY_DUPLEX,
-                     cv2.FONT_HERSHEY_COMPLEX,
-                     cv2.FONT_HERSHEY_TRIPLEX,
-                     cv2.FONT_HERSHEY_COMPLEX_SMALL]
+                     cv2.FONT_HERSHEY_DUPLEX]
+                    #  cv2.FONT_HERSHEY_COMPLEX,
+                    #  cv2.FONT_HERSHEY_TRIPLEX,
+                    #  cv2.FONT_HERSHEY_COMPLEX_SMALL]
             for j, font in enumerate(fonts):
                 images = self._putCvText(self.readableLabels[c], font=font, fontscale=fontscale, howManyInstances=countForClass)
                 images_aug = seq.augment_images(images)
@@ -130,7 +131,7 @@ class DatasetCreator():
         Centering of the text thanks to https://gist.github.com/xcsrz/8938a5d4a47976c745407fe2788c813a
         accessed on 05.11.2017 23:43        posted on 08.03.2017
         """
-        img = np.full((128,128), 255, np.uint8)
+        img = np.full((self.height*2,self.width*2), 255, np.uint8)
         fontscale=4
         textsize = cv2.getTextSize(text, font, fontscale,2)[0]
 
@@ -139,16 +140,20 @@ class DatasetCreator():
         textY = int((img.shape[0] + textsize[1]) / 2)
 
         # add text centered on image
-        cv2.putText(img, str(text), (textX, textY ), font, fontscale, fontColor, thickness=2)
-        res = cv2.resize(img,(16,16), interpolation = cv2.INTER_AREA)
-        _,res = cv2.threshold(res,200,255,cv2.THRESH_BINARY)
-
+        cv2.putText(img, str(text), (textX, textY ), font, fontscale, fontColor, thickness=5)
+        # cv2.imshow("before resize", img)
+        res = cv2.resize(img,(self.width,self.height), interpolation = cv2.INTER_AREA)
+        # cv2.imshow("after resize", res)
+        _,res = cv2.threshold(res,150,255,cv2.THRESH_BINARY)
+        # cv2.imshow("after resize and thresh", res)
+        # cv2.waitKey()
+        # cv2.destroyAllWindows()
         return [res]*howManyInstances
 
 def main():
     start = time.time()
-    d = DatasetCreator(height=16, width=16, classNo=62)
-    d.generateDataset("dataset5",fontscale = 0.5, countForClass=200)
+    d = DatasetCreator(height=64, width=64, classNo=62)
+    d.generateDataset("dataset",fontscale = 0.75, countForClass=50)
     stop = time.time()
     print("It took me %f seconds" % (stop-start))
 if __name__ == '__main__':

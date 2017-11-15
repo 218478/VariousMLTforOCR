@@ -14,7 +14,8 @@ class Reader_Chars74K:
         """
         Reads Chars74K dataset and returns 2D array of filepaths. The first
         value is the class no (derived from the directory name) and the second
-        one holds a vector of filepaths to the files.
+        one holds a vector of filepaths to the files. The reader assumes that
+        the images read have white background and black font
         """
         dirs = os.listdir(filepath)
         print(("Read " + str(len(dirs)) + " classes"))
@@ -46,16 +47,6 @@ class Reader_Chars74K:
             self.readableLabels[i-55] =  chr(i)
         for i in range(97,123):
             self.readableLabels[i-61] =  chr(i)
-
-    def getWhiteImageBlackBackground(self, image):
-        """
-        This function asserts if image has a black (0) or white (255) background.
-        And then either inverts the colors, or leaves the black background.
-        """
-        if np.bincount(np.array(image).flatten()).argmax() == 255:
-            return ImageOps.invert(image)
-        else:
-            return image
 
     def loadImagesIntoMemory(self, trainSetProportion, maxsize):
         """
@@ -98,7 +89,7 @@ class Reader_Chars74K:
 
                 # IMPORTANT!!! EXPECTING BLACK FONT WITH WHITE BACKGROUND
                 _,image = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV)
-                image = cv2.resize(image,(16,16), interpolation = cv2.INTER_AREA)
+                image = cv2.resize(image,(maxsize[1],maxsize[0]), interpolation = cv2.INTER_AREA)
                 image = np.array(image)
                 if self.imageIsNotValid(image):
                     pass
@@ -164,6 +155,7 @@ class Reader_Chars74K:
         # print(("Shape after reshape: " + str(self.trainSet.shape[0])))
         self.trainSet = self.trainSet.astype('float32')
         self.testSet = self.testSet.astype('float32')
+        self.printImageArray(self.testSet[0])
         self.trainSet /= 255
         self.testSet /= 255
         print(('self.trainSet shape:', self.trainSet.shape))
@@ -180,15 +172,24 @@ class Reader_Chars74K:
                 sys.stdout.write("%d " % cell)
             sys.stdout.write("\n")
 
+    def testLetterFromTestSet(self, model, n):
+        image = self.testSet[n]
+        cv2.imshow("test",image)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
+        values = model.predict(image, using_training_set=True)
+        print("Predicted: " + str(values))
+        print("Should be: " + str((self.testLabels[n].argmax())))
+
 def main(filepath):
-    batch_size = 512
-    epochs = 20
-    maxsize = (16, 16)
+    batch_size = 128
+    epochs = 5
+    maxsize = (64, 64)
     classNo = 62
 
     r = Reader_Chars74K()
     r.setFilepaths(filepath, classNo)
-    r.loadImagesIntoMemory(0.9, maxsize)
+    # r.loadImagesIntoMemory(0.9, maxsize)
     outfile = "temp_to_save_np_array.temp"
     # r.saveArrayToFile(outfile)
     r.loadArraysFromFile(outfile)
@@ -198,17 +199,13 @@ def main(filepath):
     # r.printImageArray(k._createPatternSetForKNN(r.trainSet, classNo)[2])
     # exit()
 
-    model = modelCNN(maxsize, classNo)#,"cnn_model_for_my_dataset.h5")
+    model = modelCNN(maxsize, classNo,"cnn_model_for_my_dataset_64x64_2.h5")
     # model = modelMLP(maxsize, classNo)#, "mlp_model_for_my_dataset.h5")
-    model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
-    model.saveKerasModel("cnn_model_for_my_dataset.h5")
-    image = r.testSet[2816]
-    cv2.imshow("test",image)
-    cv2.waitKey()
-    cv2.destroyAllWindows()
-    values = model.predict(image,using_training_set=True)
-    print("Predicted: " + str(values))
-    print("Should be: " + str((r.testLabels[2816].argmax())))
+    # model.fit(r.trainSet, r.testSet, r.trainLabels, r.testLabels, batch_size, epochs)
+    # model.saveKerasModel("cnn_model_for_my_dataset_64x64_2.h5")
+    r.testLetterFromTestSet(model, 281)
+    r.testLetterFromTestSet(model, 28)
+    r.testLetterFromTestSet(model, 57)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

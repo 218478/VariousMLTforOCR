@@ -22,16 +22,16 @@ class myGUI(QMainWindow):
         self.setup()
         self.showMaximized()
 
-    def setupParameters(self, pathToNNModels, imgWidth=16, imgHeight=16, classNo=62):
+    def setupParameters(self, pathToNNModels, imgWidth=64, imgHeight=64, classNo=62):
         """
         TODO: think about making those paramters visible or modifiable
         """
         self.pathToNNModels = pathToNNModels
-        self.maxsize = (16, 16)
+        self.maxsize = (imgHeight, imgWidth)
         self.classNo = 62
         self.filename = ""
         self.tE = TextExtractor()
-        self.modelCNN = modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model_for_my_dataset.h5"))
+        self.modelCNN = modelCNN(self.maxsize, self.classNo, os.path.join(self.pathToNNModels, "cnn_model_for_my_dataset_64x64.h5"))
 
     # TODO: add drag'n'drop functionality
     def dragEnterEvent(self, e):
@@ -96,14 +96,15 @@ class myGUI(QMainWindow):
         s = ""
         for word in self.tE.charactersFromWord:
             for char in word:
+                self.reader.printImageArray(char)
                 s += self.reader.readableLabels[model.predict(char)]
             s += " "
         return s[:-2] # don't include space at the end
 
     def extractTextFromSelectedFile(self):
         self.tE.wordExtraction(self.ui.horizontalSliderMaxH.value(), self.ui.horizontalSliderMinH.value(),
-                               self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value())
-        self.tE.characterExtraction(displayImages=False)
+                               self.ui.horizontalSliderMaxW.value(), self.ui.horizontalSliderMinW.value(),displayImages=True)
+        self.tE.characterExtraction(displayImages=True, verbose=True)
         self.tE.reverseEverything()
 
     def cvtCvMatToQImg(self, img):
@@ -147,7 +148,7 @@ class myGUI(QMainWindow):
         M = cv2.getRotationMatrix2D(center, angle, 1.0)
         rotated = cv2.warpAffine(image, M, (w, h), flags=cv2.INTER_CUBIC, borderMode=cv2.BORDER_REPLICATE)
         cv2.imshow("after rotation", rotated)
-        # cv2.waitKey()
+        cv2.waitKey()
         cv2.destroyAllWindows()
         return rotated
 

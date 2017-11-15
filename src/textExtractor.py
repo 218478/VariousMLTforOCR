@@ -52,6 +52,35 @@ class TextExtractor():
         else:
             self.charactersFromWord[i][j] = img
 
+    def resizeLetter(self, letter):
+        # TODO: the size can't be hardcoded
+        img = np.full((64,64), 0, np.uint8)
+        print("letter shape before reshape= " + str(letter.shape))
+        height, width = letter.shape
+        desired_height, desired_width = img.shape
+        if height > width:
+            print("letter higher")
+            coefficient = desired_height/height
+            print("coefficient: " + str(coefficient))
+            letter = cv2.resize(letter,None, fx=coefficient,fy=coefficient,interpolation=cv2.INTER_LANCZOS4)
+            height, width = letter.shape
+            print("letter shape after reshape= " + str(letter.shape))
+            offset = int((desired_width - width)/2)
+            print("offset = " +  str(offset))
+            img[:,offset:offset+width] = letter
+        else:
+            print("letter wider")
+            coefficient = desired_width/width
+            print("coefficient: " + str(coefficient))
+            letter = cv2.resize(letter,None, fx=coefficient,fy=coefficient,interpolation=cv2.INTER_LANCZOS4)
+            height, width = letter.shape
+            print("letter shape after reshape= " + str(letter.shape))
+            offset = int((desired_height-height)/2)
+            print("offset = " +  str(offset))
+            img[offset:offset+height,:] = letter
+        print("returned image shape = " + str(img.shape))
+        return img
+
     def characterExtraction(self, displayImages=False, verbose=False):
         '''
         TODO: include verification by average width of a character.
@@ -60,20 +89,20 @@ class TextExtractor():
         Then it erodes it with 2x2 kernel of uint8 and scans it.
         '''
         for idxWord, word, in enumerate(self.words):
-            img, imgCopy = word.copy(), word.copy()
+            img = word.copy()
 
-            img = cv2.bitwise_not(img)
-            imgCopy = cv2.bitwise_not(imgCopy)
+            _,img = cv2.threshold(img,150,255,cv2.THRESH_BINARY_INV)
+            imgCopy = img.copy()
 
             img = np.floor(np.divide(img,32)) # divided to get data into [0,7]
-            kernel = np.ones((2,2),np.uint8)
+            # kernel = np.ones((2,2),np.uint8)
 
-            img = cv2.erode(img, kernel)
-            imgCopy = cv2.erode(imgCopy, kernel)
+            # img = cv2.erode(img, kernel)
+            # imgCopy = cv2.erode(imgCopy, kernel)
 
-            imgCopy = cv2.bitwise_not(imgCopy)
-
+            # imgCopy = cv2.bitwise_not(imgCopy)
             if verbose == True:
+                print("img")
                 for row in img:
                     for cell in row:
                         sys.stdout.write("%d" % cell)
@@ -122,12 +151,20 @@ class TextExtractor():
 
 
             for idxChar, letter in enumerate(letters):
+                letter = self.resizeLetter(letter)
+                _,letter = cv2.threshold(letter,150,255,cv2.THRESH_BINARY)
                 if displayImages == True:
                     cv2.imshow("cropped_" + str(idxChar), letter)
                     cv2.moveWindow("cropped_" + str(idxChar), 30*(1+idxChar), 30*(1+idxChar))
-                self.addCharToIthWord(idxWord, idxChar, cv2.resize(letter,(16,16),interpolation=cv2.INTER_AREA))
+                if verbose == True:
+                    print("Letter " + str(idxChar) + " in word " + str(idxWord))
+                    for row in letter:
+                        for cell in row:
+                            sys.stdout.write("%d" % cell)
+                        sys.stdout.write("\n")
+                self.addCharToIthWord(idxWord, idxChar, letter)
             if displayImages == True:
-                cv2.imshow("whole_word", word)
+                cv2.imshow("whole_word_copy_not_save_in_the_object", word)
                 cv2.waitKey()
                 cv2.destroyAllWindows()
 
@@ -141,9 +178,10 @@ class TextExtractor():
         '''
         image = self.image.copy()
         _,thresh = cv2.threshold(image,150,255,cv2.THRESH_BINARY_INV)
+        image_to_extract = cv2.bitwise_not(thresh)
         kernel = cv2.getStructuringElement(cv2.MORPH_CROSS,(3,3))
         dilated = cv2.dilate(thresh,kernel,iterations = 13)
-        _, contours, hierarchy = cv2.findContours(thresh,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+        _, contours, hierarchy = cv2.findContours(dilated,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
 
         self._contours = ()
         for idx, contour in enumerate(contours):
@@ -155,7 +193,7 @@ class TextExtractor():
             if h<minH or w<minW:
                 continue
             cv2.rectangle(self.image,(x,y),(x+w,y+h),self.wordBorderValue,self.boxThicknessWords)
-            self._contours = self._contours + (image[y:y+h,x:x+w],)
+            self._contours = self._contours + (image_to_extract[y:y+h,x:x+w],)
 
         for idx, img in enumerate(self._contours):
             if displayImages == True:
@@ -165,9 +203,9 @@ class TextExtractor():
 
         # single word case
         if (len(self.words) is 0):
-            self.addWord(0, image)
+            self.addWord(0, image_to_extract)
             if displayImages == True:
-                cv2.imshow("boundingRectangle_0", image)
+                cv2.imshow("boundingRectangle_0", image_to_extract)
 
         if displayImages == True:
             cv2.imshow("whole_text", self.image)

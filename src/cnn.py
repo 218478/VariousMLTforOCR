@@ -2,7 +2,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
 from keras.layers import Conv2D, MaxPooling2D
 from keras import backend as K
-import keras, cv2
+import keras, cv2, numpy as np
 from nn import myNN
 
 class modelCNN(myNN):
@@ -26,9 +26,7 @@ class modelCNN(myNN):
             self.model = Sequential()
             self.model.add(Conv2D(32, kernel_size=(3, 3),
                       activation='relu',
-                      input_shape=input_shape,
-                      kernel_regularizer=keras.regularizers.l2(l=0.001),
-                      activity_regularizer=keras.regularizers.l2(l=0.001)))
+                      input_shape=input_shape,))
             self.model.add(Conv2D(64, (3, 3), activation='relu'))
             self.model.add(MaxPooling2D(pool_size=(2, 2)))
             self.model.add(Dropout(0.25))
@@ -53,13 +51,17 @@ class modelCNN(myNN):
 
     def predict(self, image, using_training_set=False):
         """
-        image is an opencv image. This function will resize it to the size, when it was trained
-        and inverse
+        image is an opencv image. This function will not resize it to the size. It expects inverted
+        image and will only.
         """
+        img_rows, img_cols = self.maxsize
+        if K.image_data_format() == 'channels_first':
+            image = image.reshape(1, 1, img_rows, img_cols)
+        else:
+            image = image.reshape(1, img_rows, img_cols, 1)
         if not using_training_set:
-            image = cv2.resize(image, (self.maxsize[0],self.maxsize[1]), interpolation=cv2.INTER_AREA)
-            image = cv2.bitwise_not(image)
+            image = np.array(image)
             image = image.astype('float32')
             image /= 255
-        values = self.model.predict(image.reshape(1,self.maxsize[0],self.maxsize[1],1), verbose=False)
+        values = self.model.predict(image, verbose=True)
         return values.argmax()

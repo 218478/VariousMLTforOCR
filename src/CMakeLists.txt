@@ -5,7 +5,7 @@ add_custom_target(mnist_ocr ${PYTHON_EXEC} ${SOURCE_DIR}/readMNIST.py
 
 # reading Chars74K database
 add_custom_target(chars74k_ocr ${PYTHON_EXEC} ${SOURCE_DIR}/readChars74K.py
-            ${DATASETS_DIR}/dataset
+            ${DATASETS_DIR}/dataset_64x64
             ${CMAKE_BINARY_DIR})
 
 # separate and fragment text
