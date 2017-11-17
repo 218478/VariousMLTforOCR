@@ -1,17 +1,17 @@
 @startuml
 actor Użytkownik
-control myGUI
+control MyGUI
 entity ModelNN
 entity TextExtractor
 
-Użytkownik -> myGUI: przekaż obrazek z tekstem
-myGUI <- Użytkownik: pokaż okno wyboru plików
-Użytkownik -> myGUI: wybierz plik
-myGUI -> ModelNN: wczytaj model sieci neuronowej
-myGUI -> TextExtractor: wczytaj obiekt o odpowiednich parametrach
-myGUI -> myGUI: wyrównaj tekst
-myGUI -> TextExtractor: przekaż obrazek
-myGUI <- TextExtractor: pobierz obrazek
-myGUI -> myGUI: uzupełnij pola tekstowe w aplikacji
-myGUI <- Użytkownik: wyświetl tekst
+Użytkownik -> MyGUI: przekaż obrazek z tekstem
+MyGUI <- Użytkownik: pokaż okno wyboru plików
+Użytkownik -> MyGUI: wybierz plik
+MyGUI -> ModelNN: wczytaj model sieci neuronowej
+MyGUI -> TextExtractor: wczytaj obiekt o odpowiednich parametrach
+MyGUI -> MyGUI: wyrównaj tekst
+MyGUI -> TextExtractor: przekaż obrazek
+MyGUI <- TextExtractor: pobierz obrazek
+MyGUI -> MyGUI: uzupełnij pola tekstowe w aplikacji
+MyGUI <- Użytkownik: wyświetl tekst
 @enduml

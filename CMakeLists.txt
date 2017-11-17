@@ -1,12 +1,11 @@
 cmake_minimum_required(VERSION 3.5)
-project("Kuczaj Kamil - Praca inzynierska")
+project(VariousMLTforOCR)
 
 find_program(PYTHON_EXEC python3 REQUIRED)
 find_package(PythonInterp 3.5 REQUIRED)
 find_package(PythonLibs 3.5 REQUIRED)
 find_package(OpenCV 3.3 REQUIRED) # TODO: possibly migrate from opencv to PILLOW for easier mainteneance
 include(GNUInstallDirs)
-include(find_python_module.cmake)
 
 set(SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(DATASETS_DIR ${CMAKE_SOURCE_DIR}/datasets)

@@ -1,0 +1,11 @@
+@startuml
+MyGUI *-- QMainWindow
+MyGUI o-- Ui_MainWindow
+MyGUI o-- CNN
+MyGUI o-- NearestNeighbor
+MyGUI o-- textReader
+MyGUI o-- DatasetReader
+MyGUI o-- TextExtractor
+
+
+@enduml

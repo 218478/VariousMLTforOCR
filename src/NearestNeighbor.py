@@ -2,8 +2,9 @@ import cv2
 import numpy as np
 import random
 
-class kNN():
-    def __init__(self, maxsize, k = 5):
+
+class NearestNeighbor:
+    def __init__(self, maxsize, k=5):
         self.maxsize = maxsize
         self.knn = cv2.ml.KNearest_create()
         self.k = k
@@ -14,11 +15,11 @@ class kNN():
     def load(self, filepath):
         self.knn.load(filepath)
 
-    def train(self, trainSet, trainLabels):
-        self.knn.train(trainSet, cv2.ml.ROW_SAMPLE, trainLabels)
+    def train(self, train_set, train_labels):
+        self.knn.train(train_set, cv2.ml.ROW_SAMPLE, train_labels)
 
     def reshape(self, img):
-        img =img.reshape(1, self.maxsize[0]*self.maxsize[1])
+        img = img.reshape(1, self.maxsize[0] * self.maxsize[1])
         img = img.astype(np.float32)
         return img
 
@@ -28,9 +29,9 @@ class kNN():
         ret, result, neighbours, dist = self.knn.findNearest(img, self.k)
         return int(result)
 
-    def accuracy(self, testSet, testLabels):
-        ret,result,neighbours,dist = self.knn.findNearest(testSet, self.k)
-        matches = result==testLabels
+    def accuracy(self, test_set, test_labels):
+        ret, result, neighbours, dist = self.knn.findNearest(test_set, self.k)
+        matches = result == test_labels
         correct = np.count_nonzero(matches)
-        accuracy = correct*100.0/result.size
+        accuracy = correct * 100.0 / result.size
         return accuracy
