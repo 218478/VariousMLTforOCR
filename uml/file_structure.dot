@@ -1,0 +1,47 @@
+|-- CMakeLists.txt
+|-- README.md
+|-- app_data
+|   `-- nn_models
+|       |-- cnn_model_for_my_dataset_64x64.h5
+|       `-- knn_data.npz
+|-- datasets
+|   `-- dataset_64x64
+|       |-- Sample001
+|       |-- Sample002
+|       |-- ...
+|       |-- Sample062
+|-- gui
+|   |-- CMakeLists.txt
+|   `-- MainWindow.ui
+|-- requirements.txt
+|-- src
+|   |-- CMakeLists.txt
+|   |-- CNN.py
+|   |-- DatasetReader.py
+|   |-- MLP.py
+|   |-- MyGUI.py
+|   |-- NNinterface.py
+|   |-- NearestNeighbor.py
+|   |-- TextExtractor.py
+|   `-- design.py
+|-- testing
+|   |-- CMakeLists.txt
+|   |-- example_images
+|   |   |-- 1920x1080.png
+|   |   |-- My_example.png
+|   |   |-- longLineOfText.png
+|   |   |-- models.png
+|   |   |-- regular_font.png
+|   |   |-- rotated_text.png
+|   |   |-- slightlyRotated.png
+|   |   |-- szeroki_tekst.png
+|   |   `-- textFragment.png
+|   `-- textExtractor_test.py
+|-- uml
+|   |-- CMakeLists.txt
+|   |-- class_diagram.plantuml
+|   `-- sequence_ocr.plantuml
+`-- utils
+    |-- CMakeLists.txt
+    |-- create_my_dataset.py
+    `-- create_test_image.py

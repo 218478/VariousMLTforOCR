@@ -3,9 +3,154 @@ MyGUI *-- QMainWindow
 MyGUI o-- Ui_MainWindow
 MyGUI o-- CNN
 MyGUI o-- NearestNeighbor
-MyGUI o-- textReader
 MyGUI o-- DatasetReader
 MyGUI o-- TextExtractor
 
+CNN o-- NNinterface
+MLP o-- NNinterface
+
+
+
+class CNN {
+    tuple maxsize
+    Sequential model
+    fit()
+    predict()
+}
+
+class DatasetReader {
+    int classNo
+    list filepaths
+    list readableLabels
+    int testCountPerClass
+    int trainCountPerClass
+    np.array test_labels
+    np.array test_set
+    np.array train_labels
+    np.array train_set
+    create_readable_labels()
+    load_arrays_from_file()
+    load_images_into_memory()
+    reshape_data_for_cnn()
+    reshape_data_for_knn()
+    reshape_data_for_mlp()
+    save_array_to_file()
+    set_filepaths()
+    test_letter_from_test_set_knn()
+    test_letter_from_test_set_nn()
+}
+class MLP {
+    tuple maxsize
+    keras.Sequential model
+    fit()
+    predict()
+}
+
+
+class MyGUI {
+    int class_no
+    CNN cnn
+    TextExtractor extractor
+    str filename
+    cv2.mat image
+    NearestNeighbor kNN
+    tuple maxsize
+    str path_to_models
+    DatasetReader reader
+    Ui_MainWindow ui
+    display_lcd_value()
+    do_ocr()
+    extract_text_from_selected_file()
+    fill_textbox()
+    get_text_from_model()
+    open_file_dialog()
+    set_slider_values()
+    setup()
+    setup_combo_box()
+    setup_events()
+    setup_parameters()
+}
+
+class NNinterface {
+    keras.Sequential model
+    load_keras_model()
+    save_keras_model()
+}
+class NearestNeighbor {
+    int k
+    cv2.ml.knn knn
+    tuple maxsize
+    accuracy()
+    load()
+    predict()
+    reshape()
+    save()
+    train()
+}
+
+class TextExtractor {
+    int box_thickness_chars
+    int box_thickness_words
+    int char_border_value
+    list characters_from_word
+    cv2.mat image
+    tuple maxsize
+    str path_to_image
+    int word_border_value
+    reversed_list words
+    add_char_to_ith_word()
+    add_word()
+    character_extraction()
+    init_words_chars_containers()
+    read_from_filename()
+    read_from_image()
+    resize_letter()
+    reverse_everything()
+    word_extraction()
+}
+class Ui_MainWindow {
+    centralwidget
+    comboBoxAlgorithms
+    gridLayout
+    gridLayout_2
+    gridLayout_3
+    gridLayout_4
+    gridLayout_6
+    groupBox
+    groupBoxController
+    groupBoxImageAfterOCR
+    groupBoxLoadImage
+    groupBoxTextOCR
+    groupBox_segmentation
+    horizontalLayout
+    horizontalLayout_maxH
+    horizontalLayout_maxW
+    horizontalLayout_minH
+    horizontalLayout_minW
+    horizontalSliderMaxH
+    horizontalSliderMaxW
+    horizontalSliderMinH
+    horizontalSliderMinW
+    labelAlgorithmChoice
+    labelImage
+    labelImageAfterOCR
+    labelMaxH
+    labelMaxW
+    labelMinH
+    labelMinW
+    lcdmaxH
+    lcdmaxW
+    lcdminH
+    lcdminW
+    pushButtonLoadFile
+    pushButton_doOCR
+    statusBar
+    textEdit
+    verticalLayout
+    verticalLayout_2
+    verticalLayout_3
+    retranslateUi()
+    setupUi()
+}
 
 @enduml

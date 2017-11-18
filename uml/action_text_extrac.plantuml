@@ -1,0 +1,23 @@
+@startuml
+start
+: Podaj nazwę pliku;
+if(Czy plik istnieje) then (tak)
+: Pobierz parametry\n graniczne konturu;
+: Inicjalizuj kontenery\n dla słówa i znaków;
+while(Wszystkie kontury dodane?) is (nie)
+: dokonaj ekstrakcji konturu\ndo tablicy słów;
+: narysuj kontur na oryginalnym obrazie;
+endwhile (tak)
+
+:Zacznij iterację po\n rozpoznanych słowach;
+while(Wszystkie słowa?) is (nie)
+:dokonaj podziału słowa na znaki;
+while(Koniec słowa?) is (nie)
+: dodaj znak do tablicy\n dla poszczególnego słowa;
+endwhile (tak)
+endwhile(tak)
+else(nie)
+end
+endif
+end
+@enduml

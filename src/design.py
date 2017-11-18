@@ -64,6 +64,7 @@ class Ui_MainWindow(object):
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(self.textEdit.sizePolicy().hasHeightForWidth())
         self.textEdit.setSizePolicy(sizePolicy)
+        self.textEdit.setReadOnly(True)
         self.textEdit.setObjectName("textEdit")
         self.gridLayout_6.addWidget(self.textEdit, 0, 0, 1, 1)
         self.gridLayout.addWidget(self.groupBoxTextOCR, 1, 1, 1, 1)

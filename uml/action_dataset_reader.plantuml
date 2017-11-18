@@ -1,0 +1,19 @@
+@startuml
+start
+if (Ścieżka do korzenia zbioru danych istnieje?) then (tak)
+: Zbuduj listę folderów w korzeniu zbioru danych;
+while (Czy wszystkie klasy zeskanowane?) is (tak)
+    : Weź element z listy;
+    if (Ścieżka dla klasy istnieje?) then (tak)
+    while (Czy wszystkie obrazy zeskanowane?) is (nie)
+    : dodaj ściężkę zdjęcia\n do listy dla danej klasy;
+    endwhile(tak)
+    else (nie)
+    : Rzuć wyjątek;
+    stop
+    endif
+endwhile (nie)
+end
+else (nie)
+stop
+@enduml

@@ -15,4 +15,6 @@ endforeach(UML)
 add_custom_target(python_class_diagram pyreverse3 ${CMAKE_SOURCE_DIR}/src/*)
 add_custom_command(TARGET python_class_diagram
                    POST_BUILD
-                   COMMAND dot -Tps classes_No_Name.dot -o outfile.ps)
+                   COMMAND dot -Tps classes_No_Name.dot -o outfile.ps
+                   COMMAND ps2pdf outfile.ps outfile.pdf
+                   COMMAND okular outfile.pdf)

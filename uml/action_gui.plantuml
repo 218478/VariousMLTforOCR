@@ -1,0 +1,21 @@
+@startuml
+
+start
+: Załaduj dane modeli;
+: Uruchom interfejs\n graficzny;
+while(Sygnał wyłączenia aplikacji) is (nie)
+if (Przycisk ładowania\n obrazu wciśniety) then (tak)
+: Wyświetl okno\n ładowania plików;
+: Zapisz ścieżkę\n wybranego pliku;
+: Wyświetl w lewym\n górnym oknie\n wybrany obraz;
+endif
+if (Przycisk rozpoznawania\n obrazu wciśniety) then (tak)
+: Pobierz informację\n o wybranym algorytmie;
+: Wywołaj funkcję rozpoznawania obrazu;
+: Wyświetl w lewym\n górnym oknie\n obraz z zaznaczonymi konturami;
+: Wypełnij okienko tekstowe z rozpoznanym tekstem;
+endif
+endwhile(tak)
+end
+' TODO: Wydziel bloki
+@enduml

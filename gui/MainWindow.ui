@@ -108,6 +108,9 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
+           <property name="readOnly">
+            <bool>true</bool>
+           </property>
           </widget>
          </item>
         </layout>
@@ -180,16 +183,16 @@ background-color: qlineargradient(spread:reflect, x1:1, y1:0, x2:0, y1:0, stop:0
         <layout class="QVBoxLayout" name="verticalLayout_3">
          <item>
           <widget class="QGroupBox" name="groupBox_segmentation">
+           <property name="font">
+            <font>
+             <pointsize>22</pointsize>
+             <weight>75</weight>
+             <bold>true</bold>
+            </font>
+           </property>
            <property name="title">
             <string>Image Segmentation</string>
            </property>
-           <property name="font">
-                <font>
-                <pointsize>22</pointsize>
-                <weight>75</weight>
-                <bold>true</bold>
-                </font>
-        </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
            </property>
